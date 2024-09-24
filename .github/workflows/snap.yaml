@@ -64,7 +64,14 @@ jobs:
       snap-artifact-name: ${{ inputs.snap-name }}-${{ fromJson(steps.setVariables.outputs.list-of-params)[0] }}
     steps:
       - id: setVariables
-        run: echo "list-of-params=$input" >> $GITHUB_OUTPUT
+        run: |
+          if jq -e . >/dev/null 2>&1 <<<"$input"; then
+              echo "list-of-params=$input" >> $GITHUB_OUTPUT
+          else
+              input_as_json="[\"$input\"]"
+              echo "ubuntu-image input is not a json, formatting it into a json list: $input_as_json."
+              echo "list-of-params=$input_as_json" >> $GITHUB_OUTPUT
+          fi
         env:
           input: ${{ inputs.ubuntu-image }}
   build:
