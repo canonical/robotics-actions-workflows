@@ -36,7 +36,7 @@ on:
 
 jobs:
   build:
-    uses: ubuntu-robotics/snap_workflows/.github/workflows/snap.yaml@main
+    uses: canonical/robotics-actions-workflows/.github/workflows/snap.yaml@main
     with:
       ubuntu-image: ${{ inputs.ubuntu-image }}
       snapcraft-channel: ${{ inputs.snapcraft-channel }}
