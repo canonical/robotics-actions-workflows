@@ -77,7 +77,7 @@ jobs:
           input: ${{ inputs.ubuntu-image }}
   build:
     needs: setup
-    runs-on: [self-hosted, linux, ARM64, large, noble]
+    runs-on: [self-hosted, linux, ARM64, medium, noble]
     outputs:
       snap-file: ${{ steps.build-snap.outputs.snap }}
       upload-branch-name: ${{ steps.branch-name.outputs.BRANCH_NAME }}
