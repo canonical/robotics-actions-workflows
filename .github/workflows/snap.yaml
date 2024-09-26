@@ -66,6 +66,7 @@ jobs:
       - id: setVariables
         run: |
           if jq -e . >/dev/null 2>&1 <<<"$input"; then
+              echo "ubuntu-image input is a json, frowarding it as it is."
               echo "list-of-params=$input" >> $GITHUB_OUTPUT
           else
               input_as_json="[\"$input\"]"
@@ -76,7 +77,7 @@ jobs:
           input: ${{ inputs.ubuntu-image }}
   build:
     needs: setup
-    runs-on: "${{ fromJSON(needs.setup.outputs.list-of-params) }}"
+    runs-on: [self-hosted, linux, ARM64, large, noble]
     outputs:
       snap-file: ${{ steps.build-snap.outputs.snap }}
       upload-branch-name: ${{ steps.branch-name.outputs.BRANCH_NAME }}
