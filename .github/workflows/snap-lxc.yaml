@@ -23,16 +23,35 @@ on:
       snapcraft-args:
         required: false
         type: string
+      snapcraft-build-path:
+        required: false
+        type: string
       snap-install-args:
         required: false
         type: string
       enable-experimental-extensions-env:
         required: false
         type: boolean
+      publish:
+        description: "whether to publish the snap to the store"
+        required: false
+        type: boolean
+      publish-track:
+        description: "Snap Store channel track use for publication"
+        required: false
+        type: string
+      cleanup:
+        description: "whether to cleanup artifacts"
+        required: false
+        type: boolean
       test-script:
         description: "Custom script to run some custom snap testing"
         required: false
         type: string
+    secrets:
+      store-login:
+        description: "Snap Store credential exported with snapcraft export-login"
+        required: false
 
 jobs:
   build:
@@ -41,9 +60,16 @@ jobs:
       ubuntu-image: ${{ inputs.ubuntu-image }}
       snapcraft-channel: ${{ inputs.snapcraft-channel }}
       branch-name: ${{ inputs.branch-name }}
+      snapcraft-args: ${{ inputs.snapcraft-args }}
+      snapcraft-build-path: ${{ inputs.snapcraft-build-path }}
       snap-name: ${{ inputs.snap-name }}
       snap-install-args: ${{ inputs.snap-install-args }}
-      cleanup: false
+      enable-experimental-extensions-env: ${{ inputs.enable-experimental-extensions-env }}
+      publish: ${{ inputs.publish }}
+      publish-track: ${{ inputs.publish-track }}
+      cleanup: ${{ inputs.cleanup }}
+    secrets:
+      store-login: ${{ secrets.store-login }}
 
   test-on-lxc:
     runs-on: ubuntu-latest
