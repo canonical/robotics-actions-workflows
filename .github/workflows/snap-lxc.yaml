@@ -26,6 +26,7 @@ on:
       snapcraft-build-path:
         required: false
         type: string
+        default: "."
       snap-install-args:
         required: false
         type: string
@@ -36,10 +37,12 @@ on:
         description: "whether to publish the snap to the store"
         required: false
         type: boolean
+        default: false
       publish-track:
         description: "Snap Store channel track use for publication"
         required: false
         type: string
+        default: latest
       cleanup:
         description: "whether to cleanup artifacts"
         required: false
