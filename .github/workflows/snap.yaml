@@ -65,6 +65,9 @@ on:
       snap-file:
         description: "Complete name of the uploaded snap file"
         value: ${{ jobs.build.outputs.snap-file }}
+      runs-on-params:
+        description: "Json value to use for later runs-on"
+        value: ${{ jobs.setup.outputs.list-of-params }}
 
 jobs:
   setup:
