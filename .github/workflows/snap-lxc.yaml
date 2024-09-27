@@ -30,6 +30,7 @@ on:
       snap-install-args:
         required: false
         type: string
+        default: "--dangerous"
       enable-experimental-extensions-env:
         required: false
         type: boolean
