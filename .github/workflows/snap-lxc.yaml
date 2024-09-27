@@ -91,12 +91,12 @@ jobs:
         done
     - name: Push snap to lxc container
       run: |
-        lxc file push ${{ inputs.snap-name }}-${{ inputs.branch-name }}/${{ inputs.snap-name }}_*.snap lxc-container/home/ubuntu/
+        lxc file push ${{ needs.build.outputs.snap-artifact-name }}-${{ needs.build.outputs.upload-branch-name }}/${{ needs.build.outputs.snap-file }} lxc-container/home/ubuntu/
     - name: Install snap
       env:
         SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
       run: |
-        lxc exec lxc-container -- sh -c "snap install /home/ubuntu/${{ inputs.snap-name }}_*.snap $SNAPCRAFT_INSTALL_ARGS"
+        lxc exec lxc-container -- sh -c "snap install /home/ubuntu/${{ needs.build.outputs.snap-file }} $SNAPCRAFT_INSTALL_ARGS"
 
     - name: Run custom test script
       shell: bash
@@ -115,10 +115,10 @@ jobs:
     - name: Download snap artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ inputs.snap-name }}-${{needs.build.outputs.upload-branch-name}}
+        name: ${{ needs.build.outputs.snap-artifact-name }}-${{needs.build.outputs.upload-branch-name}}
         path: ${{ inputs.snapcraft-build-path }}
     - name: Publish snap
-      uses: snapcore/action-publish@v1
+      uses: canonical/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.store-login }}
       if: env.SNAPCRAFT_STORE_CREDENTIALS
