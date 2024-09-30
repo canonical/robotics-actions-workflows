@@ -106,7 +106,7 @@ jobs:
           ${{ inputs.test-script }}
         EOF
         lxc file push test-script.sh lxc-container/home/ubuntu/
-        lxc exec --user 1000 lxc-container -- sh -c "bash /home/ubuntu/test-script.sh"
+        lxc exec --user 1000 --env HOME=/home/ubuntu --cwd /home/ubuntu lxc-container -- sh -c "bash /home/ubuntu/test-script.sh"
 
   publish:
     if: inputs.publish == true
