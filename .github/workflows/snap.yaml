@@ -55,6 +55,19 @@ on:
       store-login:
         description: "Snap Store credential exported with snapcraft export-login"
         required: false
+    outputs:
+      snap-artifact-name:
+        description: "Snap artifact name"
+        value: ${{ jobs.setup.outputs.snap-artifact-name }}
+      upload-branch-name:
+        description: "Branch name formated to be used in a filename"
+        value: ${{ jobs.build.outputs.upload-branch-name }}
+      snap-file:
+        description: "Complete name of the uploaded snap file"
+        value: ${{ jobs.build.outputs.snap-file }}
+      runs-on-params:
+        description: "Json value to use for later runs-on"
+        value: ${{ jobs.setup.outputs.list-of-params }}
 
 jobs:
   setup:
