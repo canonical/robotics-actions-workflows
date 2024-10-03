@@ -1,23 +1,26 @@
 # Robotics Actions Workflows
 
-Repository storing [reusable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows) for robotics.
+This repository hosts a collection of [reusable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows) for building, testing & releasing robotics snaps.
 
+Reusable workflows helps with the execution of scheduled workflows and reduces code duplication.
 These workflows are intended to be re-used in github actions building snaps.
+They implemented an opinionated workflow to build, test & release snaps.
 
-Having reusable workflows helps with the execution of scheduled workflows and reduces code duplication. Reusing workflows allows to create new workflows more quickly by avoiding to duplicate common steps.
+## Description
 
-In this repository there are two reusable workflows:
+The reusable workflows are:
 
-- [snap.yaml](https://github.com/canonical/robotics-actions-workflows/blob/main/.github/workflows/snap.yaml): this reusable workflow provides a template for building, installing and testing snaps. It provides various inputs to flexibly build snaps and it also allows the user to pass a custom bash script that can be used for testing.
-- [snap-lxc.yaml](https://github.com/canonical/robotics-actions-workflows/blob/main/.github/workflows/snap-lxc.yaml): this reusable workflow uses the previous workflow to build snaps, but then it uses lxc containers to perform testing. This is useful in case we need to perform testing with the snap on deprecated images (e.g. ubuntu 18.04).
-
+- [snap.yaml](.github/workflows/snap.yaml) - the main entry point to the overall workflow.
+  It includes the other reusable workflows and integrate them into on single cohesive workflow. It is most likely the one users should call.
+- [snap-build.yaml](.github/workflows/snap-build.yaml) - the workflow to build the snap.
+- [snap-test.yaml](.github/workflows/snap-test.yaml) - the workflow to test the snap.
+- [snap-publish.yaml](.github/workflows/snap-publish.yaml) - the workflow to publish the snap.
 
 ## How to use
 
 Below is shown an example on how to call these reusable workflows in a github repository to build and test a snap. The required input parameters must be defined for the workflow to run correctly.
 
-
-```
+```yaml
 jobs:
   main-snap:
     uses: canonical/robotics-actions-workflows/.github/workflows/snap.yaml@main

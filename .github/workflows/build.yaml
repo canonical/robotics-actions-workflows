@@ -1,0 +1,80 @@
+name: build
+
+on:
+  workflow_call:
+    inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Defaults to the current git ref.
+        required: false
+        type: string
+      runs-on:
+        default: 'ubuntu-latest'
+        description: The runner(s) to use. Defaults to 'ubuntu-latest'.
+        required: false
+        type: string
+      snapcraft-args:
+        required: false
+        type: string
+      snapcraft-channel:
+        default: 'latest/stable'
+        description: The channel from which to install Snapcraft. Defaults to 'latest/stable'.
+        required: false
+        type: string
+      snapcraft-enable-experimental-extensions:
+        default: false
+        description: Whether to enable Snapcraft experimental extensions or not. Defaults to false.
+        required: false
+        type: boolean
+      snapcraft-source-subdir:
+        default: '.'
+        description: The path where to execute snapcraft. Defaults to '.'.
+        required: false
+        type: string
+    outputs:
+      snap-artifact-name:
+        description: Snap artifact name
+        value: ${{ jobs.build.outputs.artifact-name }}
+
+jobs:
+  setup:
+    uses: ./.github/workflows/_runner-setup.yaml
+    with:
+      runs-on: ${{ inputs.runs-on }}
+
+  build:
+    needs: setup
+    runs-on: '${{ fromJSON(needs.setup.outputs.runs-on) }}'
+    outputs:
+      snap-artifact-name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Build snap
+        uses: canonical/action-build@v1
+        id: build-snap
+        env:
+          SNAPCRAFT_ENABLE_EXPERIMENTAL_EXTENSIONS: '${{ inputs.snapcraft-enable-experimental-extensions }}'
+        with:
+          path: '${{ inputs.snapcraft-source-subdir }}'
+          snapcraft-channel: '${{ inputs.snapcraft-channel }}'
+          snapcraft-args: '${{ inputs.snapcraft-args }}'
+
+      - name: Set unique artifact name
+        id: artifact-unique-name
+        run: |
+          echo "artifact-name=$(basename -s .snap ${{ steps.build-snap.outputs.snap }})" >> "$GITHUB_OUTPUT"
+
+        #  echo "artifact-name=$(basename -s .snap ${{ steps.build-snap.outputs.snap }})-$(echo ${{ inputs.git-ref }} | sed "s|\/|\-|g")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
+          path: '${{ steps.build-snap.outputs.snap }}'
+          retention-days: 10
+          if-no-files-found: error
