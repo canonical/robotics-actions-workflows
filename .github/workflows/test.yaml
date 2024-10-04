@@ -108,5 +108,5 @@ jobs:
 
       - name: Execute test script in the container
         shell: bash
-        run: lxc exec --user 1000 lxc-container -- sh -c "bash -euxo pipefail test-script.sh"
+        run: lxc exec --user 1000 lxc-container -- sh -c "bash -euxo pipefail /home/ubuntu/test-script.sh"
         if: "${{ inputs.lxc-image != '' && inputs.snap-test-script != '' }}"
