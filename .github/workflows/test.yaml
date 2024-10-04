@@ -73,7 +73,7 @@ jobs:
       - name: Install the snap in the container
         env:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
-        run: lxc exec --user 1000 lxc-container -- sh -c "sudo snap install ${{ steps.get-snap-file.outputs.snap-file }} ${{ env.SNAPCRAFT_INSTALL_ARGS }}"
+        run: lxc exec lxc-container -- sh -c "snap install home/ubuntu/${{ steps.get-snap-file.outputs.snap-file }} ${{ env.SNAPCRAFT_INSTALL_ARGS }}"
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Snap info
@@ -81,7 +81,7 @@ jobs:
         if: "${{ inputs.lxc-image == '' }}"
 
       - name: Snap info
-        run: lxc exec --user 1000 lxc-container -- sh -c "snap info ${{ steps.get-snap-file.outputs.snap-file }}"
+        run: lxc exec lxc-container -- sh -c "snap info ${{ steps.get-snap-file.outputs.snap-file }}"
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Create test script
