@@ -34,7 +34,7 @@ on:
     outputs:
       snap-artifact-name:
         description: Snap artifact name
-        value: ${{ jobs.build.outputs.artifact-name }}
+        value: ${{ jobs.build.outputs.snap-artifact-name }}
 
 jobs:
   setup:
