@@ -90,7 +90,7 @@ jobs:
       snapstore-login: ${{ secrets.snapstore-login }}
 
   cleanup:
-    if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
     runs-on: ubuntu-latest
     needs: [build, publish]
     steps:
