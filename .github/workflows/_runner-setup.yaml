@@ -17,16 +17,16 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      runs-on: ${{ steps.convert.outputs.runs-on }}
+      runs-on: ${{ steps.set_variables.outputs.runs-on }}
     steps:
-      - name: Convert to JSON
-        id: convert
+      - id: set_variables
+        run: |
+          if jq -e . >/dev/null 2>&1 <<< "$input"; then
+            echo "runs-on=$input" >> $GITHUB_OUTPUT
+          else
+            input_as_json="[\"$input\"]"
+            echo "ubuntu-image input is not a json, formatting it into a json list: $input_as_json."
+            echo "runs-on=$input_as_json" >> $GITHUB_OUTPUT
+          fi
         env:
           input: ${{ inputs.runs-on }}
-        run: |
-          input_as_json="${input}"
-          if ! jq -e . >/dev/null 2>&1 <<< "${input}"; then
-            echo "Input is not a JSON, formatting it into a JSON list."
-            input_as_json="[\"${input}\"]"
-          fi
-          echo "runs_on=${input_as_json}" >> $GITHUB_OUTPUT
