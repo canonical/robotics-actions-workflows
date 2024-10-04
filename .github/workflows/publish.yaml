@@ -34,6 +34,10 @@ jobs:
 
       - name: Publish snap
         uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapstore-login }}
+        # Check if the key isn't empty
+        if: env.SNAPCRAFT_STORE_CREDENTIALS
         with:
           snap: ${{ steps.get-snap-file.outputs.snap-file }}
           release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}

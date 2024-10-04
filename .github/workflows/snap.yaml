@@ -80,15 +80,31 @@ jobs:
       snap-install-args: ${{ inputs.snap-install-args }}
       snap-test-script: ${{ inputs.snap-test-script }}
 
+  check-snapstore-login:
+    runs-on: ubuntu-latest
+    outputs:
+      defined: ${{ steps.check.outputs.defined }}
+    steps:
+      - name: Check if Snapstore login is defined
+        id: check
+        # perform secret check & put boolean result as an output
+        shell: bash
+        run: |
+          if [ "${{ secrets.snapstore-login }}" != '' ]; then
+            echo "defined=true" >> $GITHUB_OUTPUT;
+          else
+            echo "defined=false" >> $GITHUB_OUTPUT;
+          fi
+
   publish:
-    needs: [build, test]
+    needs: [build, test, check-snapstore-login]
     uses: ./.github/workflows/publish.yaml
     with:
       snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
       snap-track: ${{ inputs.snap-track }}
     secrets:
       snapstore-login: ${{ secrets.snapstore-login }}
-    if: ${{ github.secret_source == 'Actions' }}
+    if: needs.check-snapstore-login.outputs.defined == 'true'
 
   cleanup:
     if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
