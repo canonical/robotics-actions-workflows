@@ -22,6 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      - name: Check Snapstore login
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapstore-login }}
+        # Check if the key isn't empty
+        if: env.SNAPCRAFT_STORE_CREDENTIALS
+        run: |
+          echo "Snapstore login is empty !"
+          exit 1
+
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
@@ -34,10 +43,6 @@ jobs:
 
       - name: Publish snap
         uses: snapcore/action-publish@v1
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapstore-login }}
-        # Check if the key isn't empty
-        if: env.SNAPCRAFT_STORE_CREDENTIALS
         with:
           snap: ${{ steps.get-snap-file.outputs.snap-file }}
           release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}
