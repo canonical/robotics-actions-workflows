@@ -77,12 +77,16 @@ jobs:
         run: lxc exec lxc-container -- sh -c "sudo snap install ${{ steps.get-snap-file.outputs.snap-file }} $SNAPCRAFT_INSTALL_ARGS"
         if: "${{ inputs.lxc-image != '' }}"
 
+      - name: Retrieve snap name
+        id: get-snap-name
+        run: echo "snap-name=$(basename -s .snap ${{ steps.get-snap-file.outputs.snap-file }} | sed 's/_.*//')" >> "$GITHUB_OUTPUT"
+
       - name: Snap info
-        run: snap info ${{ steps.get-snap-file.outputs.snap-file }}
+        run: snap info ${{ steps.get-snap-name.outputs.snap-name }}
         if: "${{ inputs.lxc-image == '' }}"
 
       - name: Snap info
-        run: lxc exec lxc-container -- sh -c "snap info ${{ steps.get-snap-file.outputs.snap-file }}"
+        run: lxc exec lxc-container -- sh -c "snap info ${{ steps.get-snap-name.outputs.snap-name }}"
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Create test script
