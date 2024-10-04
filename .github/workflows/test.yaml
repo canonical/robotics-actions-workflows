@@ -36,6 +36,7 @@ jobs:
     needs: [setup]
     runs-on: '${{ fromJSON(needs.setup.outputs.runs-on) }}'
     steps:
+
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:

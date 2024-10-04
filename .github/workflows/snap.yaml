@@ -88,6 +88,7 @@ jobs:
       snap-track: ${{ inputs.snap-track }}
     secrets:
       snapstore-login: ${{ secrets.snapstore-login }}
+    if: ${{ github.secret_source == 'Actions' }}
 
   cleanup:
     if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
