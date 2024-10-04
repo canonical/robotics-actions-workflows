@@ -45,6 +45,11 @@ jobs:
       - name: Retrieve snap file
         id: get-snap-file
         run: echo "snap-file=$(find . -name '*.snap')" >> "$GITHUB_OUTPUT"
+      - name: Retrieve snap name
+        id: get-snap-name
+        run: |
+          snap_name=$(find . -name '*.snap' | awk -F '_' '{print $1}')
+          echo "snap-name=$snap_name" >> "$GITHUB_OUTPUT"
 
       - name: Setup LXD
         uses: canonical/setup-lxd@main
@@ -77,11 +82,11 @@ jobs:
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Snap info
-        run: snap info ${{ steps.get-snap-file.outputs.snap-file }}
+        run: snap info ${{ steps.get-snap-name.outputs.snap-name }}
         if: "${{ inputs.lxc-image == '' }}"
 
       - name: Snap info
-        run: lxc exec lxc-container -- sh -c "snap info ${{ steps.get-snap-file.outputs.snap-file }}"
+        run: lxc exec lxc-container -- sh -c "snap info ${{ steps.get-snap-name.outputs.snap-name }}"
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Create test script
