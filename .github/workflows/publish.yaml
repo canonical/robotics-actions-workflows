@@ -4,12 +4,13 @@ on:
   workflow_call:
     inputs:
       snap-artifact:
+        default: ''
         description: The snap artifact to be published.
         required: true
         type: string
       snap-track:
         default: latest
-        description: Snap Store channel track use for publication. Default to 'latest'.
+        description: Snap Store channel track use for publication.
         required: false
         type: string
     secrets:

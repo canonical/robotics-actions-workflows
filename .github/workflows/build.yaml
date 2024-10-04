@@ -5,30 +5,32 @@ on:
     inputs:
       git-ref:
         default: '${{ github.ref }}'
-        description: The branch to checkout. Defaults to the current git ref.
+        description: The branch to checkout.
         required: false
         type: string
       runs-on:
         default: 'ubuntu-latest'
-        description: The runner(s) to use. Defaults to 'ubuntu-latest'.
+        description: The runner(s) to use.
         required: false
         type: string
       snapcraft-args:
+        default: ''
+        description: The arguments to pass to snapcraft (pack).
         required: false
         type: string
       snapcraft-channel:
         default: 'latest/stable'
-        description: The channel from which to install Snapcraft. Defaults to 'latest/stable'.
+        description: The channel from which to install Snapcraft.
         required: false
         type: string
       snapcraft-enable-experimental-extensions:
         default: false
-        description: Whether to enable Snapcraft experimental extensions or not. Defaults to false.
+        description: Whether to enable Snapcraft experimental extensions or not.
         required: false
         type: boolean
       snapcraft-source-subdir:
         default: '.'
-        description: The path where to execute snapcraft. Defaults to '.'.
+        description: The path where to execute snapcraft.
         required: false
         type: string
     outputs:
@@ -37,14 +39,14 @@ on:
         value: ${{ jobs.build.outputs.artifact-name }}
 
 jobs:
-  setup:
+  prepare:
     uses: ./.github/workflows/_runner-setup.yaml
     with:
       runs-on: ${{ inputs.runs-on }}
 
   build:
-    needs: setup
-    runs-on: '${{ fromJSON(needs.setup.outputs.runs-on) }}'
+    needs: [prepare]
+    runs-on: '${{ fromJSON(needs.prepare.outputs.runs-on) }}'
     outputs:
       snap-artifact-name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
     steps:

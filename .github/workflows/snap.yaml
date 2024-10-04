@@ -4,54 +4,58 @@ on:
   workflow_call:
     inputs:
       cleanup:
-        description: Whether to cleanup the artifacts. Defaults to 'true'.
+        default: true
+        description: Whether to cleanup the artifacts.
         required: false
         type: boolean
-        default: true
       git-ref:
         default: '${{ github.ref }}'
-        description: The branch to checkout. Defaults to the current git ref.
+        description: The branch to checkout.
         required: false
         type: string
       lxc-image:
+        default: ''
         description: The LXC image to run this action in.
         required: false
         type: string
       runs-on:
         default: 'ubuntu-latest'
-        description: The runner(s) to use. Defaults to 'ubuntu-latest'.
+        description: The runner(s) to use.
         required: false
         type: string
       snap-install-args:
         default: "--dangerous"
-        description: The argument to pass to snap install. Defaults to '--dangerous'.
+        description: The argument to pass to snap install.
         required: false
         type: string
       snap-test-script:
+        default: ''
         description: A test script to run against the snap.
         required: false
         type: string
       snap-track:
         default: latest
-        description: Snap Store channel track use for publication. Default to 'latest'.
+        description: Snap Store channel track use for publication.
         required: false
         type: string
       snapcraft-args:
+        default: ''
+        description: The arguments to pass to snapcraft (pack).
         required: false
         type: string
       snapcraft-channel:
         default: 'latest/stable'
-        description: The channel from which to install Snapcraft. Defaults to 'latest/stable'.
+        description: The channel from which to install Snapcraft.
         required: false
         type: string
       snapcraft-enable-experimental-extensions:
         default: false
-        description: Whether to enable Snapcraft experimental extensions or not. Defaults to false.
+        description: Whether to enable Snapcraft experimental extensions or not.
         required: false
         type: boolean
       snapcraft-source-subdir:
         default: '.'
-        description: The path where to execute snapcraft. Defaults to '.'.
+        description: The path where to execute snapcraft.
         required: false
         type: string
     secrets:
