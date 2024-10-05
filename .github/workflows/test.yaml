@@ -25,20 +25,21 @@ on:
         type: string
 
 jobs:
-  prepare:
+  prepare-test:
     uses: ./.github/workflows/_runner-setup.yaml
     with:
       runs-on: ${{ inputs.runs-on }}
 
   test:
-    needs: [prepare]
-    runs-on: '${{ fromJSON(needs.prepare.outputs.runs-on) }}'
+    needs: [prepare-test]
+    runs-on: '${{ fromJSON(needs.prepare-test.outputs.runs-on) }}'
     steps:
 
       - name: Download snap artifact(s)
         uses: actions/download-artifact@v4
         with:
           path: .
+          # merge-multiple: true
 
       - name: Retrieve snap file
         id: get-snap-file

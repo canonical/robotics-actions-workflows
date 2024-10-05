@@ -80,7 +80,6 @@ jobs:
     with:
       lxc-image: ${{ inputs.lxc-image }}
       runs-on: ${{ inputs.runs-on }}
-      # snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
       snap-install-args: ${{ inputs.snap-install-args }}
       snap-test-script: ${{ inputs.snap-test-script }}
 
@@ -104,7 +103,6 @@ jobs:
     needs: [build, test, check-snapstore-login]
     uses: ./.github/workflows/publish.yaml
     with:
-      # snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
       snap-track: ${{ inputs.snap-track }}
     secrets:
       snapstore-login: ${{ secrets.snapstore-login }}

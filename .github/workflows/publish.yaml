@@ -14,7 +14,7 @@ on:
         required: true
 
 jobs:
-  prepare:
+  prepare-publish:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.get-snap-file.outputs.matrix }}
@@ -44,19 +44,13 @@ jobs:
           echo "JSON Files: ${jsonfiles}"
           echo "matrix=${jsonfiles}" >> "$GITHUB_OUTPUT"
 
-      # - name: Prepare matrix
-      #   id: prepare-matrix
-      #   uses: ./.github/actions/_jsonify.yaml
-      #   with:
-      #     input: ${{ steps.get-snap-files.outputs.snap-files }}
-
   publish:
-    needs: [prepare]
+    needs: [prepare-publish]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        snap: ${{ fromJson(needs.prepare.outputs.matrix) }}
+        snap: ${{ fromJson(needs.prepare-publish.outputs.matrix) }}
     steps:
 
       - name: Check Snapstore login
@@ -73,6 +67,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
+          # pattern: '*matrix.snap*' @todo
 
       - name: Publish snap
         run: echo "Publishing '${{ matrix.snap }}'."

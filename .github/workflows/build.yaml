@@ -35,23 +35,23 @@ on:
         type: string
 
 jobs:
-  prepare-runners:
+  prepare-build-runners:
     uses: ./.github/workflows/_runner-setup.yaml
     with:
       runs-on: ${{ inputs.runs-on }}
 
-  prepare-matrix:
+  prepare-build-matrix:
     uses: ./.github/workflows/_jsonify.yaml
     with:
       input: ${{ inputs.snapcraft-source-subdir }}
 
   build:
-    needs: [prepare-runners, prepare-matrix]
-    runs-on: '${{ fromJSON(needs.prepare-runners.outputs.runs-on) }}'
+    needs: [prepare-build-runners, prepare-build-matrix]
+    runs-on: '${{ fromJSON(needs.prepare-build-runners.outputs.runs-on) }}'
     strategy:
       fail-fast: false
       matrix:
-        source-subdir: ${{ fromJson(needs.prepare-matrix.outputs.json) }}
+        source-subdir: ${{ fromJson(needs.prepare-build-matrix.outputs.json) }}
     steps:
 
       - name: Checkout
