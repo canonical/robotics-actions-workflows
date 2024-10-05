@@ -3,11 +3,6 @@ name: publish
 on:
   workflow_call:
     inputs:
-      # snap-artifact:
-      #   default: ''
-      #   description: The snap artifact to be published.
-      #   required: true
-      #   type: string
       snap-track:
         default: latest
         description: Snap Store channel track use for publication.
@@ -38,7 +33,6 @@ jobs:
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
-          # name: ${{ inputs.snap-artifact }}
           path: .
 
       - name: Retrieve snap file
@@ -72,15 +66,10 @@ jobs:
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
-          # name: ${{ inputs.snap-artifact }}
           path: .
 
-      # - name: Retrieve snap file
-      #   id: get-snap-file
-      #   run: echo "snap-files=$(find . -name '*.snap')" >> "$GITHUB_OUTPUT"
-
       - name: Publish snap
-        run: echo "Publishing'${{ matrix.snap }}'."
+        run: echo "Publishing '${{ matrix.snap }}'."
 
       # - name: Publish snap
       #   uses: snapcore/action-publish@v1
