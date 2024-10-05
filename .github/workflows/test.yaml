@@ -44,11 +44,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           # name: ${{ inputs.snap-artifact }}
-          path: snap_artifacts
+          path: .
 
       - name: Retrieve snap file
         id: get-snap-file
-        run: echo "snap-files=$(find snap_artifacts -name '*.snap')" >> "$GITHUB_OUTPUT"
+        run: |
+          files=$(find . -name '*.snap' -printf '%h%f ')
+          echo "Files: ${files}"
+          echo "snap-files=${files}" >> "$GITHUB_OUTPUT"
 
       - name: Setup LXD
         uses: canonical/setup-lxd@main
