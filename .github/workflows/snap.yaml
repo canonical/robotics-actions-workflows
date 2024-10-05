@@ -80,7 +80,7 @@ jobs:
     with:
       lxc-image: ${{ inputs.lxc-image }}
       runs-on: ${{ inputs.runs-on }}
-      snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
+      # snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
       snap-install-args: ${{ inputs.snap-install-args }}
       snap-test-script: ${{ inputs.snap-test-script }}
 
@@ -104,18 +104,18 @@ jobs:
     needs: [build, test, check-snapstore-login]
     uses: ./.github/workflows/publish.yaml
     with:
-      snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
+      # snap-artifact: ${{ needs.build.outputs.snap-artifact-name }}
       snap-track: ${{ inputs.snap-track }}
     secrets:
       snapstore-login: ${{ secrets.snapstore-login }}
     if: needs.check-snapstore-login.outputs.defined == 'true'
 
-  cleanup:
-    if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
-    runs-on: ubuntu-latest
-    needs: [build, publish]
-    steps:
-      - name: Delete artifact
-        uses: geekyeggo/delete-artifact@v4
-        with:
-          name: ${{ needs.build.outputs.snap-artifact-name }}
+  # cleanup:
+  #   if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
+  #   runs-on: ubuntu-latest
+  #   needs: [build, publish]
+  #   steps:
+  #     - name: Delete artifact
+  #       uses: geekyeggo/delete-artifact@v4
+  #       with:
+  #         name: ${{ needs.build.outputs.snap-artifact-name }}
