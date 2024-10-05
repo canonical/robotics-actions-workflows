@@ -108,12 +108,12 @@ jobs:
       snapstore-login: ${{ secrets.snapstore-login }}
     if: needs.check-snapstore-login.outputs.defined == 'true'
 
-  cleanup:
-    if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
-    runs-on: ubuntu-latest
-    needs: [build, publish]
-    steps:
-      - name: Delete artifact
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: *-snap
+  # cleanup:
+  #   if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
+  #   runs-on: ubuntu-latest
+  #   needs: [build, publish]
+  #   steps:
+  #     - name: Delete artifact
+  #       uses: geekyeggo/delete-artifact@v4
+  #       with:
+  #         name: ${{ needs.build.outputs.snap-artifact-name }}
