@@ -33,10 +33,10 @@ on:
         description: The path where to execute snapcraft.
         required: false
         type: string
-    outputs:
-      snap-artifact-name:
-        description: Snap artifact name
-        value: ${{ jobs.build.outputs.artifact-name }}
+    # outputs:
+    #   snap-artifact-name:
+    #     description: Snap artifact name
+    #     value: ${{ jobs.build.outputs.artifact-name }}
 
 jobs:
   prepare-runners:

@@ -25,10 +25,10 @@ jobs:
         id: jsonify
         run: |
           if jq -e . >/dev/null 2>&1 <<< "${INPUT}"; then
-            echo "runs-on=${INPUT}" >> $GITHUB_OUTPUT
+            echo "json=${INPUT}" >> $GITHUB_OUTPUT
           else
             input_as_json="[\"${INPUT}\"]"
-            echo "ubuntu-image input is not a json, formatting it into a json list: $input_as_json."
-            echo "runs-on=$input_as_json" >> $GITHUB_OUTPUT
+            echo "Input '${INPUT}' input is not a json, formatting it into a json list: ${input_as_json}."
+            echo "json=${input_as_json}" >> $GITHUB_OUTPUT
           fi
 
