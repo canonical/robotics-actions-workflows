@@ -25,14 +25,20 @@ on:
         type: string
 
 jobs:
-  prepare-test:
-    uses: ./.github/workflows/_runner-setup.yaml
-    with:
-      runs-on: ${{ inputs.runs-on }}
+  prepare-test-runners:
+    runs-on: ubuntu-latest
+    outputs:
+      runs-on: ${{ steps.string-to-json.outputs.json }}
+    steps:
+      - name: String to JSON list
+        id: string-to-json
+        uses: canonical/robotics-actions-workflows/string-to-json@fix/refactor-matrix
+        with:
+          string: ${{ inputs.runs-on }}
 
   test:
-    needs: [prepare-test]
-    runs-on: '${{ fromJSON(needs.prepare-test.outputs.runs-on) }}'
+    needs: [prepare-test-runners]
+    runs-on: '${{ fromJSON(needs.prepare-test-runners.outputs.runs-on) }}'
     steps:
 
       - name: Download snap artifact(s)
