@@ -94,7 +94,7 @@ jobs:
 
       - name: Retrieve snap name
         id: get-snap-name
-        run: echo "snap-names=$(for snap in ${{ steps.get-snap-file.outputs.snap-file }}; do basename -s .snap ${snap} | sed 's/_.*//')" >> "$GITHUB_OUTPUT"
+        run: echo "snap-names=$(printf '%s ' $(for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do basename -s .snap ${snap} | sed 's/_.*//'))" >> "$GITHUB_OUTPUT"
 
       - name: Snap info
         if: "${{ inputs.lxc-image == '' }}"
