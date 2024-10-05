@@ -36,14 +36,54 @@ on:
 
 jobs:
   prepare-build-runners:
-    uses: ./.github/workflows/_runner-setup.yaml
-    with:
-      runs-on: ${{ inputs.runs-on }}
+    runs-on: ubuntu-latest
+    # env:
+    #   INPUT: ${{ inputs.runs-on }}
+    outputs:
+      runs-on: ${{ steps.string-to-json.outputs.json }}
+    steps:
+      - name: String to JSON list
+        id: string-to-json
+        uses: canonical/robotics-actions-workflows/string-to-json@main
+        with:
+          string: ${{ inputs.runs-on }}
+    #   - name: String to JSON list
+    #     id: string-to-json
+    #     run: |
+    #       input_json="${INPUT}"
+    #       if ! jq -e . >/dev/null 2>&1 <<< "${INPUT}"; then
+    #         input_json="[\"${INPUT}\"]"
+    #         if ! jq -e . >/dev/null 2>&1 <<< "${input_json}"; then
+    #           echo "Failed to JSONify '${INPUT}': '${input_json}'."
+    #           exit 1
+    #         fi
+    #       fi
+    #       echo "json=${input_json}" >> $GITHUB_OUTPUT
 
   prepare-build-matrix:
-    uses: ./.github/workflows/_jsonify.yaml
-    with:
-      input: ${{ inputs.snapcraft-source-subdir }}
+    runs-on: ubuntu-latest
+    # env:
+    #   INPUT: ${{ inputs.snapcraft-source-subdir }}
+    outputs:
+      matrix: ${{ steps.string-to-json.outputs.json }}
+    steps:
+      - name: String to JSON list
+        id: string-to-json
+        uses: canonical/robotics-actions-workflows/string-to-json@main
+        with:
+          string: ${{ inputs.snapcraft-source-subdir }}
+      # - name: String to JSON list
+      #   id: string-to-json
+      #   run: |
+      #     input_json="${INPUT}"
+      #     if ! jq -e . >/dev/null 2>&1 <<< "${INPUT}"; then
+      #       input_json="[\"${INPUT}\"]"
+      #       if ! jq -e . >/dev/null 2>&1 <<< "${input_json}"; then
+      #         echo "Failed to JSONify '${INPUT}': '${input_json}'."
+      #         exit 1
+      #       fi
+      #     fi
+      #     echo "json=${input_json}" >> $GITHUB_OUTPUT
 
   build:
     needs: [prepare-build-runners, prepare-build-matrix]
@@ -51,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source-subdir: ${{ fromJson(needs.prepare-build-matrix.outputs.json) }}
+        source-subdir: ${{ fromJson(needs.prepare-build-matrix.outputs.matrix) }}
     steps:
 
       - name: Checkout
