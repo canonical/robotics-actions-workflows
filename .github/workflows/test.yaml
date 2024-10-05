@@ -73,7 +73,7 @@ jobs:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
         run: |
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
-            sudo snap install ${snap} $SNAPCRAFT_INSTALL_ARGS
+            sudo snap install ${snap} ${SNAPCRAFT_INSTALL_ARGS}
           done
         if: "${{ inputs.lxc-image == '' }}"
 
@@ -82,7 +82,8 @@ jobs:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
         run:
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
-            lxc exec lxc-container -- sh -c "snap install /home/ubuntu/$(basename ${snap}) $SNAPCRAFT_INSTALL_ARGS"
+            snap_basename="$(basename ${snap})"
+            lxc exec lxc-container -- sh -c "snap install /home/ubuntu/${snap_basename} ${SNAPCRAFT_INSTALL_ARGS}"
           done
         if: "${{ inputs.lxc-image != '' }}"
 
