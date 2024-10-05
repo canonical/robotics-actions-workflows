@@ -36,10 +36,15 @@ jobs:
           path: .
 
       - name: Retrieve snap file
-        id: get-snap-files
-        run: echo "snap-files=$(find . -name '*.snap')" >> "$GITHUB_OUTPUT"
+        id: get-snap-file
+        run: |
+          files=$(find . -name '*.snap' -printf "\"%h/%f\",")
+          echo "Files: ${files}"
+          jsonfiles=$(echo "[${files%?}]")
+          echo "JSON Files: ${jsonfiles}"
+          echo "snap-files=${jsonfiles}" >> "$GITHUB_OUTPUT"
 
-      - name: prepare-matrix
+      - name: Prepare matrix
         id: prepare-matrix
         uses: ./.github/actions/_jsonify.yaml
         with:
@@ -49,6 +54,7 @@ jobs:
     needs: [prepare]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         snap: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:

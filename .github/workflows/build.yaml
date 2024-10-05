@@ -49,6 +49,7 @@ jobs:
     needs: [prepare-runners, prepare-matrix]
     runs-on: '${{ fromJSON(needs.prepare-runners.outputs.runs-on) }}'
     strategy:
+      fail-fast: false
       matrix:
         source-subdir: ${{ fromJson(needs.prepare-matrix.outputs.json) }}
     steps:
