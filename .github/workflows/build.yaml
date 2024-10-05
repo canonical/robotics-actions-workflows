@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: canonical/robotics-actions-workflows/string-to-json@main
+        uses: canonical/robotics-actions-workflows/string-to-json@fix/refactor-matrix
         with:
           string: ${{ inputs.runs-on }}
     #   - name: String to JSON list
@@ -69,7 +69,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: canonical/robotics-actions-workflows/string-to-json@main
+        uses: canonical/robotics-actions-workflows/string-to-json@fix/refactor-matrix
         with:
           string: ${{ inputs.snapcraft-source-subdir }}
       # - name: String to JSON list
