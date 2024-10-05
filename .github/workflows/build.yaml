@@ -39,14 +39,22 @@ on:
         value: ${{ jobs.build.outputs.artifact-name }}
 
 jobs:
-  prepare:
+  prepare-runners:
     uses: ./.github/workflows/_runner-setup.yaml
     with:
       runs-on: ${{ inputs.runs-on }}
 
+  prepare-matrix:
+    uses: ./.github/workflows/_jsonify.yaml
+    with:
+      input: ${{ inputs.snapcraft-source-subdir }}
+
   build:
-    needs: [prepare]
-    runs-on: '${{ fromJSON(needs.prepare.outputs.runs-on) }}'
+    needs: [prepare-runners, prepare-matrix]
+    runs-on: '${{ fromJSON(needs.prepare-runners.outputs.runs-on) }}'
+    strategy:
+      matrix:
+        source-subdir: ${{ fromJson(needs.prepare-matrix.outputs.json) }}
     outputs:
       snap-artifact-name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
     steps:

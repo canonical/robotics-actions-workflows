@@ -13,11 +13,11 @@ on:
         description: The runner(s) to use.
         required: false
         type: string
-      snap-artifact:
-        default: ''
-        description: The snap artifact to be tested.
-        required: true
-        type: string
+      # snap-artifact:
+      #   default: ''
+      #   description: The snap artifact to be tested.
+      #   required: true
+      #   type: string
       snap-install-args:
         default: "--dangerous"
         description: The argument to pass to snap install.
@@ -40,15 +40,15 @@ jobs:
     runs-on: '${{ fromJSON(needs.prepare.outputs.runs-on) }}'
     steps:
 
-      - name: Download snap artifact
+      - name: Download snap artifact(s)
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.snap-artifact }}
-          path: .
+          # name: ${{ inputs.snap-artifact }}
+          path: snap_artifacts
 
       - name: Retrieve snap file
         id: get-snap-file
-        run: echo "snap-file=$(find . -name '*.snap')" >> "$GITHUB_OUTPUT"
+        run: echo "snap-files=$(find snap_artifacts -name '*.snap')" >> "$GITHUB_OUTPUT"
 
       - name: Setup LXD
         uses: canonical/setup-lxd@main
@@ -65,32 +65,47 @@ jobs:
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Push the snap to the container
-        run: lxc file push ${{ steps.get-snap-file.outputs.snap-file }} lxc-container/home/ubuntu/
+        run: |
+          for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
+            lxc file push ${snap} lxc-container/home/ubuntu/
+          done
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Install the snap
         env:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
-        run: sudo snap install ${{ steps.get-snap-file.outputs.snap-file }} $SNAPCRAFT_INSTALL_ARGS
+        run: |
+          for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
+            sudo snap install ${snap} $SNAPCRAFT_INSTALL_ARGS
+          done
         if: "${{ inputs.lxc-image == '' }}"
 
       - name: Install the snap in the container
         env:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
-        run: lxc exec lxc-container -- sh -c "snap install /home/ubuntu/$(basename ${{ steps.get-snap-file.outputs.snap-file }}) $SNAPCRAFT_INSTALL_ARGS"
+        run:
+          for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
+            lxc exec lxc-container -- sh -c "snap install /home/ubuntu/$(basename ${snap}) $SNAPCRAFT_INSTALL_ARGS"
+          done
         if: "${{ inputs.lxc-image != '' }}"
 
       - name: Retrieve snap name
         id: get-snap-name
-        run: echo "snap-name=$(basename -s .snap ${{ steps.get-snap-file.outputs.snap-file }} | sed 's/_.*//')" >> "$GITHUB_OUTPUT"
+        run: echo "snap-names=$(for snap in ${{ steps.get-snap-file.outputs.snap-file }}; do basename -s .snap ${snap} | sed 's/_.*//')" >> "$GITHUB_OUTPUT"
 
       - name: Snap info
-        run: snap info ${{ steps.get-snap-name.outputs.snap-name }}
         if: "${{ inputs.lxc-image == '' }}"
+        run: |
+          for snap in ${{ steps.get-snap-name.outputs.snap-names }}; do
+            snap info ${snap}
+          done
 
       - name: Snap info
-        run: lxc exec lxc-container -- sh -c "snap info ${{ steps.get-snap-name.outputs.snap-name }}"
         if: "${{ inputs.lxc-image != '' }}"
+        run: |
+          for snap in ${{ steps.get-snap-name.outputs.snap-names }}; do
+            lxc exec lxc-container -- sh -c "snap info ${snap}"
+          done
 
       - name: Create test script
         if: inputs.snap-test-script != ''
