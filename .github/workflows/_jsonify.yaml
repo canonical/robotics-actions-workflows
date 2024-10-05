@@ -25,10 +25,10 @@ jobs:
         id: jsonify
         run: |
           if jq -e . >/dev/null 2>&1 <<< "${INPUT}"; then
+            echo "Input '${INPUT}' is JSON."
             echo "json=${INPUT}" >> $GITHUB_OUTPUT
           else
             input_as_json="[\"${INPUT}\"]"
             echo "Input '${INPUT}' input is not a json, formatting it into a json list: ${input_as_json}."
             echo "json=${input_as_json}" >> $GITHUB_OUTPUT
           fi
-

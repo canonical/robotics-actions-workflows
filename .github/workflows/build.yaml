@@ -55,8 +55,8 @@ jobs:
     strategy:
       matrix:
         source-subdir: ${{ fromJson(needs.prepare-matrix.outputs.json) }}
-    outputs:
-      snap-artifact-name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
+    # outputs:
+      # snap-artifact-name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
     steps:
 
       - name: Checkout
