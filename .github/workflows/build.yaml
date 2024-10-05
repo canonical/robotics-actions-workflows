@@ -70,7 +70,7 @@ jobs:
         env:
           SNAPCRAFT_ENABLE_EXPERIMENTAL_EXTENSIONS: '${{ inputs.snapcraft-enable-experimental-extensions }}'
         with:
-          path: '${{ inputs.snapcraft-source-subdir }}'
+          path: '${{ matrix.source-subdir }}'
           snapcraft-channel: '${{ inputs.snapcraft-channel }}'
           snapcraft-args: '${{ inputs.snapcraft-args }}'
 
