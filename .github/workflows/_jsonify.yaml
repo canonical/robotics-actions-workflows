@@ -11,7 +11,7 @@ on:
     outputs:
       json:
         description: The input string formated as a JSON
-        value: ${{ jobs.generate-snap-matrix.outputs.matrix }}
+        value: ${{ jobs.jsonify.outputs.json }}
 
 jobs:
   jsonify:
