@@ -83,6 +83,7 @@ jobs:
         run:
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
             snap_basename="$(basename ${snap})"
+            echo "Installing snap '/home/ubuntu/${snap_basename}'"
             lxc exec lxc-container -- sh -c "snap install /home/ubuntu/${snap_basename} ${SNAPCRAFT_INSTALL_ARGS}"
           done
         if: "${{ inputs.lxc-image != '' }}"

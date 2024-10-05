@@ -17,7 +17,7 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.prepare-matrix.outputs.matrix }}
+      matrix: ${{ steps.get-snap-file.outputs.matrix }}
     steps:
 
       - name: Check Snapstore login
@@ -42,13 +42,13 @@ jobs:
           echo "Files: ${files}"
           jsonfiles=$(echo "[${files%?}]")
           echo "JSON Files: ${jsonfiles}"
-          echo "snap-files=${jsonfiles}" >> "$GITHUB_OUTPUT"
+          echo "matrix=${jsonfiles}" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare matrix
-        id: prepare-matrix
-        uses: ./.github/actions/_jsonify.yaml
-        with:
-          input: ${{ steps.get-snap-files.outputs.snap-files }}
+      # - name: Prepare matrix
+      #   id: prepare-matrix
+      #   uses: ./.github/actions/_jsonify.yaml
+      #   with:
+      #     input: ${{ steps.get-snap-files.outputs.snap-files }}
 
   publish:
     needs: [prepare]
