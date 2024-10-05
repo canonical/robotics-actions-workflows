@@ -1,0 +1,97 @@
+name: monitor-upstream
+
+on:
+  workflow_call:
+    inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Defaults to the current git ref.
+        required: false
+        type: string
+      script-compare-version:
+        description: A bash script to compare versions.
+        required: false
+        type: string
+      script-get-upstream-version:
+        description: A bash script to retrieve the upstream version.
+        required: true
+        type: string
+      snapcraft-source-subdir:
+        default: '.'
+        description: The path where to execute snapcraft. Defaults to '.'.
+        required: false
+        type: string
+
+jobs:
+  compare:
+    runs-on: 'ubuntu-latest'
+    steps:
+
+      - name: Install dependencies
+        run: sudo snap install yq
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Find and parse snapcraft.yaml
+        id: parse
+        env:
+          project_root: ${{ inputs.snapcraft-source-subdir }}
+        run: |
+          # If no project path is specified, default to top-level of repo
+          project_root="${project_root:-.}"
+
+          valid_paths=(
+            "${project_root}/.snapcraft.yaml"
+            "${project_root}/build-aux/snap/snapcraft.yaml"
+            "${project_root}/snap/snapcraft.yaml"
+            "${project_root}/snapcraft.yaml"
+          )
+
+          for file in "${valid_paths[@]}"; do
+              if [[ -f "$file" ]]; then
+                  yaml_path="$file"
+              fi
+          done
+
+          if [[ -z "${yaml_path}" ]]; then
+            echo "No snapcraft.yaml found"
+            exit 1
+          fi
+
+          echo "version=$(yq -r '.version' "$yaml_path")" >> "$GITHUB_OUTPUT"
+
+      - name: Create get-upstream-version script
+        shell: bash
+        run: |
+          cat > get-upstream-version.sh << EOF
+            ${{ inputs.script-get-upstream-version }}
+          EOF
+
+      - name: Run get-upstream-version script
+        id: get-upstream-version
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "upstream_version=$(./get-upstream-version.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Compare versions
+        id: compare
+        if: "${{ inputs.script-compare-version == '' }}"
+        env:
+          SNAP_VERSION: ${{ steps.parse.outputs.version }}
+          UPSTREAM_VERSION: ${{ steps.get-upstream-version.outputs.upstream-version }}
+        run: |
+          curl https://raw.githubusercontent.com/Ariel-Rodriguez/sh-semversion-2/main/semver2.sh -o semver2.sh
+
+          echo "update=$(./semver2.sh \"${UPSTREAM_VERSION}\" \"${SNAP_VERSION}\")" >> "$GITHUB_OUTPUT"
+
+      - name: Create an issue
+        uses: dacbd/create-issue-action@main
+        if: always() && steps.compare.outputs.update == '1'
+        with:
+          token: ${{ github.token }}
+          title: Upstream version '${{ steps.get-upstream-version.outputs.upstream-version }}' available.
+          body: ''
