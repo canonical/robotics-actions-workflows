@@ -80,7 +80,7 @@ jobs:
       - name: Install the snap in the container
         env:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
-        run:
+        run: |
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
             snap_basename="$(basename ${snap})"
             echo "Installing snap '/home/ubuntu/${snap_basename}'"
