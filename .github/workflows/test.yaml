@@ -49,7 +49,7 @@ jobs:
       - name: Retrieve snap file
         id: get-snap-file
         run: |
-          files=$(find . -name '*.snap' -printf '%h%f ')
+          files=$(find . -name '*.snap' -printf '%h/%f ')
           echo "Files: ${files}"
           echo "snap-files=${files}" >> "$GITHUB_OUTPUT"
 
