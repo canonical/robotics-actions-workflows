@@ -41,10 +41,15 @@ jobs:
     runs-on: '${{ fromJSON(needs.prepare-test-runners.outputs.runs-on) }}'
     steps:
 
+      - name: Find out the arch
+        id: get-arch
+        run: echo "arch=$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
+
       - name: Download snap artifact(s)
         uses: actions/download-artifact@v4
         with:
           path: .
+          pattern: '*${{ steps.get-arch.outputs.arch }}*'
           # merge-multiple: true
 
       - name: Retrieve snap file
