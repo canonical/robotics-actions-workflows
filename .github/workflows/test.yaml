@@ -122,7 +122,7 @@ jobs:
         if: inputs.snap-test-script != ''
         shell: bash
         run: |
-          cat > test-script.sh << EOF
+          cat > test-script.sh << 'EOF'
             ${{ inputs.snap-test-script }}
           EOF
 
