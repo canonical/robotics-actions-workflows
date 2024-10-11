@@ -28,7 +28,7 @@ jobs:
 
 ## Examples
 
-Examples of this reusable workflow can be found at [`canonical/robotics-action-workflows-tests`](https://github.com/canonical/robotics-action-workflows-tests).
+Examples of this reusable workflow can be found at [`canonical/robotics-action-workflows-tests`](https://github.com/canonical/robotics-action-workflows-tests/tree/main/.github/workflows).
 
 ## Details
 
@@ -52,7 +52,9 @@ By default it:
 
 - builds the snap
 - installs it and calls `snapcraft info` on it
-- publishes it to the store, either to `latest/edge` on pushes to the branch or to `latest/candidate` on tags and releases.
+- publishes it to the store,
+  either to `latest/edge` on pushes to the branch or to `latest/candidate` on tags and releases.
+  This workflow is only executed on `push` events.
 
 For further configurations, see each sub-workflow details below.
 
@@ -135,6 +137,7 @@ The `test` uses the following subset of options from the `snap` workflow:
 ### The publish workflow
 
 The [publish](.github/workflows/publish.yaml) workflow publishes the snap(s(s) built during the run and after they've been tested.
+It uses the [canonical/action-publish](https://github.com/canonical/action-publish) action to do so.
 
 It publishes the snap to `edge` unless the GitHub reference is a tag,
 in which case it publishes to `candidate`.
