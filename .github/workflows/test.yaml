@@ -3,7 +3,7 @@ name: test
 on:
   workflow_call:
     inputs:
-      lxc-image:
+      lxd-image:
         default: ''
         description: The LXC image to run this action in.
         required: false
@@ -61,24 +61,24 @@ jobs:
 
       - name: Setup LXD
         uses: canonical/setup-lxd@main
-        if: "${{ inputs.lxc-image != '' }}"
+        if: "${{ inputs.lxd-image != '' }}"
 
       - name: Launch an LXD container
         run: |
-          lxc launch '${{ inputs.lxc-image }}' lxc-container
+          lxc launch '${{ inputs.lxd-image }}' lxc-container
           lxc exec lxc-container -- cloud-init status --wait
           until lxc exec lxc-container -- getent passwd ubuntu; do
             echo "Waiting for the ubuntu user."
             sleep 0.25
           done
-        if: "${{ inputs.lxc-image != '' }}"
+        if: "${{ inputs.lxd-image != '' }}"
 
       - name: Push the snap to the container
         run: |
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
             lxc file push ${snap} lxc-container/home/ubuntu/
           done
-        if: "${{ inputs.lxc-image != '' }}"
+        if: "${{ inputs.lxd-image != '' }}"
 
       - name: Install the snap
         env:
@@ -87,7 +87,7 @@ jobs:
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
             sudo snap install ${snap} ${SNAPCRAFT_INSTALL_ARGS}
           done
-        if: "${{ inputs.lxc-image == '' }}"
+        if: "${{ inputs.lxd-image == '' }}"
 
       - name: Install the snap in the container
         env:
@@ -98,21 +98,21 @@ jobs:
             echo "Installing snap '/home/ubuntu/${snap_basename}'"
             lxc exec lxc-container -- sh -c "snap install /home/ubuntu/${snap_basename} ${SNAPCRAFT_INSTALL_ARGS}"
           done
-        if: "${{ inputs.lxc-image != '' }}"
+        if: "${{ inputs.lxd-image != '' }}"
 
       - name: Retrieve snap name
         id: get-snap-name
         run: echo "snap-names=$(printf '%s ' $(for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do basename -s .snap ${snap} | sed 's/_.*//'; done))" >> "$GITHUB_OUTPUT"
 
       - name: Snap info
-        if: "${{ inputs.lxc-image == '' }}"
+        if: "${{ inputs.lxd-image == '' }}"
         run: |
           for snap in ${{ steps.get-snap-name.outputs.snap-names }}; do
             snap info ${snap}
           done
 
       - name: Snap info
-        if: "${{ inputs.lxc-image != '' }}"
+        if: "${{ inputs.lxd-image != '' }}"
         run: |
           for snap in ${{ steps.get-snap-name.outputs.snap-names }}; do
             lxc exec lxc-container -- sh -c "snap info ${snap}"
@@ -128,14 +128,14 @@ jobs:
 
       - name: Push test script LXD container
         run: lxc file push test-script.sh lxc-container/home/ubuntu/
-        if: "${{ inputs.lxc-image != '' && inputs.snap-test-script != '' }}"
+        if: "${{ inputs.lxd-image != '' && inputs.snap-test-script != '' }}"
 
       - name: Execute test script
         shell: bash
         run: bash -euxo pipefail test-script.sh
-        if: "${{ inputs.lxc-image == '' && inputs.snap-test-script != '' }}"
+        if: "${{ inputs.lxd-image == '' && inputs.snap-test-script != '' }}"
 
       - name: Execute test script in the container
         shell: bash
         run: lxc exec --user 1000 lxc-container -- sh -c "bash -euxo pipefail /home/ubuntu/test-script.sh"
-        if: "${{ inputs.lxc-image != '' && inputs.snap-test-script != '' }}"
+        if: "${{ inputs.lxd-image != '' && inputs.snap-test-script != '' }}"
