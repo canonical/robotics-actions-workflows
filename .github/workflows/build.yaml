@@ -38,7 +38,7 @@ jobs:
   prepare-build-runners:
     runs-on: ubuntu-latest
     outputs:
-      runs-on: ${{ fromJSON(steps.string-to-json.outputs.json) }}
+      runs-on: ${{ steps.string-to-json.outputs.json }}
     steps:
       - name: String to JSON list
         id: string-to-json
@@ -64,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         source-subdir: ${{ fromJson(needs.prepare-build-matrix.outputs.matrix) }}
-        runs-on: ${{ needs.prepare-build-runners.outputs.runs-on }}
+        runs-on: ${{ fromJSON(needs.prepare-build-runners.outputs.runs-on) }}
     steps:
 
       - name: Checkout
