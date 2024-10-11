@@ -85,7 +85,7 @@ jobs:
       - name: Set unique artifact name
         id: artifact-unique-name
         run: |
-          echo "artifact-name=$(basename -s .snap ${{ steps.build-snap.outputs.snap }})" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=workflow-build-snap-$(basename -s .snap ${{ steps.build-snap.outputs.snap }})" >> "$GITHUB_OUTPUT"
 
         #  echo "artifact-name=$(basename -s .snap ${{ steps.build-snap.outputs.snap }})-$(echo ${{ inputs.git-ref }} | sed "s|\/|\-|g")" >> "$GITHUB_OUTPUT"
 

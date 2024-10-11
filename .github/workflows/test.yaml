@@ -53,7 +53,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
-          pattern: '*${{ steps.get-arch.outputs.arch }}*'
+          pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*'
           # merge-multiple: true
 
       - name: Retrieve snap file

@@ -34,6 +34,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
+          pattern: 'workflow-build-snap-*'
 
       - name: Retrieve snap file
         id: get-snap-file
@@ -67,7 +68,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
-          # pattern: '*matrix.snap*' @todo
+          # @todo(artivis) The matrix is based on the snap filename to be published.
+          # Associate it the artifact name so that this job only downloads
+          # the one artifact it needs.
+          pattern: 'workflow-build-snap-*'
 
       - name: Publish snap
         run: echo "Publishing '${{ matrix.snap }}'."

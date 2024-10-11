@@ -86,7 +86,7 @@ sub-folders to build the snap(s) from using the `snapcraft-source-subdir` option
 
 Caller may also use self-hosted runners using the `runs-on` option (e.g. `['ubuntu-latest', 'self-hosted']`)
 
-The resulting snap(s) is then uploaded as an artifact.
+The resulting snap(s) is then uploaded as an artifact prefixed with `workflow-build-snap-`.
 
 #### Options
 
