@@ -59,7 +59,7 @@ jobs:
 
   build:
     needs: [prepare-build-runners, prepare-build-matrix]
-    runs-on: '${{ fromJSON(needs.prepare-build-runners.outputs.runs-on) }}'
+    runs-on: ${{ fromJSON(needs.prepare-build-runners.outputs.runs-on) }}
     strategy:
       fail-fast: false
       matrix:
