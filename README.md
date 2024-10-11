@@ -62,7 +62,7 @@ For further configurations, see each sub-workflow details below.
 
 | Option | Default Value | Description | Required |
 |---|---|---|---|
-| `cleanup` | true | Whether to cleanup the artifacts. | false |
+| `cleanup` | false | Whether to cleanup the artifacts. | false |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 | `lxd-image` | ' ' | The LXC image to run this action in. | false |
 | `runs-on` | ubuntu-latest | The runner(s) to use. | false |

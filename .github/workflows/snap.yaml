@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       cleanup:
-        default: true
+        default: false
         description: Whether to cleanup the artifacts.
         required: false
         type: boolean
