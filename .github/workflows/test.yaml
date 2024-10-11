@@ -38,7 +38,7 @@ jobs:
 
   test:
     needs: [prepare-test-runners]
-    runs-on: ${{ fromJSON(needs.prepare-test-runners.outputs.runs-on) }}
+    runs-on: "${{ fromJSON(needs.prepare-test-runners.outputs.runs-on) }}"
     steps:
 
       - name: Find out the arch
