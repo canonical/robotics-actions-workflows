@@ -38,7 +38,11 @@ jobs:
 
   test:
     needs: [prepare-test-runners]
-    runs-on: "${{ fromJSON(needs.prepare-test-runners.outputs.runs-on) }}"
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: ${{ fromJSON(needs.prepare-test-runners.outputs.runs-on) }}
     steps:
 
       - name: Find out the arch
