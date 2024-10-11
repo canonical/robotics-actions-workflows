@@ -74,10 +74,7 @@ jobs:
           pattern: 'workflow-build-snap-*'
 
       - name: Publish snap
-        run: echo "Publishing '${{ matrix.snap }}'."
-
-      # - name: Publish snap
-      #   uses: snapcore/action-publish@v1
-      #   with:
-      #     snap: ${{ matrix.snap }}
-      #     release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}
+        uses: snapcore/action-publish@v1
+        with:
+          snap: ${{ matrix.snap }}
+          release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}
