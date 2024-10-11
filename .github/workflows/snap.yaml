@@ -153,7 +153,7 @@ jobs:
     - name: Download snap artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ inputs.snap-name }}-${{needs.build.outputs.upload-branch-name}}
+        name: ${{ needs.setup.outputs.snap-artifact-name }}-${{needs.build.outputs.upload-branch-name}}
         path: ${{ inputs.snapcraft-build-path }}
     - name: Publish snap
       uses: snapcore/action-publish@v1
