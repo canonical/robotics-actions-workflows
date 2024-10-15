@@ -87,8 +87,6 @@ jobs:
         run: |
           echo "artifact-name=workflow-build-snap-$(basename -s .snap ${{ steps.build-snap.outputs.snap }})" >> "$GITHUB_OUTPUT"
 
-        #  echo "artifact-name=$(basename -s .snap ${{ steps.build-snap.outputs.snap }})-$(echo ${{ inputs.git-ref }} | sed "s|\/|\-|g")" >> "$GITHUB_OUTPUT"
-
       - name: Upload snap artifact
         uses: actions/upload-artifact@v4
         with:
