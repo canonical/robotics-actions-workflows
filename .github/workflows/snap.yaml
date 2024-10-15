@@ -15,7 +15,7 @@ on:
         type: string
       lxd-image:
         default: ''
-        description: The LXC image to run this action in.
+        description: The LXD image to run this action in.
         required: false
         type: string
       runs-on:
