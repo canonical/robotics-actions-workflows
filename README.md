@@ -136,7 +136,7 @@ The `test` uses the following subset of options from the `snap` workflow:
 
 ### The publish workflow
 
-The [publish](.github/workflows/publish.yaml) workflow publishes the snap(s(s) built during the run and after they've been tested.
+The [publish](.github/workflows/publish.yaml) workflow publishes the snap(s) built during the run and after they've been tested.
 It uses the [canonical/action-publish](https://github.com/canonical/action-publish) action to do so.
 
 It publishes the snap to `edge` unless the GitHub reference is a tag,
