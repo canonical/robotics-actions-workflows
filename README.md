@@ -77,7 +77,7 @@ For further configurations, see each sub-workflow details below.
 ### The build workflow
 
 The [build](.github/workflows/build.yaml) workflow,
-as it names suggests,
+as its name suggests,
 builds the snap.
 It does so using the [canonical/action-build](https://github.com/canonical/action-build) and the snap project it finds at the repository root.
 
