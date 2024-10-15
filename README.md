@@ -64,7 +64,7 @@ For further configurations, see each sub-workflow details below.
 |---|---|---|---|
 | `cleanup` | false | Whether to cleanup the artifacts. | false |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
-| `lxd-image` | ' ' | The LXC image to run this action in. | false |
+| `lxd-image` | ' ' | The LXD image to run this action in. | false |
 | `runs-on` | ubuntu-latest | The runner(s) to use. | false |
 | `snap-install-args` | --dangerous | The argument to pass to snap install. | false |
 | `snap-test-script` | ' ' | A test script to run against the snap. | false |
