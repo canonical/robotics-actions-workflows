@@ -142,7 +142,7 @@ It uses the [canonical/action-publish](https://github.com/canonical/action-publi
 It publishes the snap to `edge` unless the GitHub reference is a tag,
 in which case it publishes to `candidate`.
 
-Not that all snaps are published to the same track defined by `snap-track` (e.g. `snap-track: 5.x`).
+Note that all snaps are published to the same track defined by `snap-track` (e.g. `snap-track: 5.x`).
 
 #### Options
 
