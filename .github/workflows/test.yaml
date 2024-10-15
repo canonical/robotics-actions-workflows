@@ -5,7 +5,7 @@ on:
     inputs:
       lxd-image:
         default: ''
-        description: The LXC image to run this action in.
+        description: The LXD image to run the snap tests in.
         required: false
         type: string
       runs-on:
