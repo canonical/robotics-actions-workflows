@@ -111,7 +111,7 @@ Similarly to the `build` workflow, callers can define the runner it is executed 
 Note that it will only install the snap(s) of matching architecture.
 
 By default the workflow solely make sure the snap(s) is installable and calls `snapcraft info` on it.
-However the caller may provide an additional custom test as a bash script through the `snap-test-script` option.
+However, the caller may provide an additional custom test as a bash script through the `snap-test-script` option.
 For instance:
 
 ```yaml
