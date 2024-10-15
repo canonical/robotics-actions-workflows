@@ -79,7 +79,7 @@ For further configurations, see each sub-workflow details below.
 The [build](.github/workflows/build.yaml) workflow,
 as it names suggests,
 builds the snap.
-It does so using the [canonical/action-build](https://github.com/canonical/action-build) and the snap project it find at the repository root.
+It does so using the [canonical/action-build](https://github.com/canonical/action-build) and the snap project it finds at the repository root.
 
 Caller may specify one, or several,
 sub-folders to build the snap(s) from using the `snapcraft-source-subdir` option (e.g. `snapcraft-source-subdir: 'my-path'` or `snapcraft-source-subdir: '["bar", "foo"]'`).
