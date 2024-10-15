@@ -47,7 +47,7 @@ The reusable workflows are:
 The [snap](.github/workflows/snap.yaml) workflow is the main reusable workflow.
 It calls, in one go, the build,
 test and release workflows as an integrated and coherent sequence.
-As such, it exposes all configurations options of each sub-workflow as detailed in the next section.
+As such, it exposes all configuration options of each sub-workflow as detailed in the next section.
 By default it:
 
 - builds the snap
