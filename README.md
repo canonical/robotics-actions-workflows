@@ -103,7 +103,7 @@ The `build` uses the following subset of options from the `snap` workflow:
 
 The [test](.github/workflows/test.yaml) workflow aims at testing the snap(s) built by the `build` workflow.
 As such, its input is all the artefacts created during the run,
-out of which is uses all the `*.snap` file it finds.
+out of which it uses all the `*.snap` file it finds.
 This allows for testing multiple snaps at once,
 especially convenient for intricate multi-snaps deployments.
 
