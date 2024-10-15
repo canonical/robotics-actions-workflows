@@ -26,7 +26,7 @@ jobs:
         run: |
           # Check if the key is empty
           if [ -z "${SNAPCRAFT_STORE_CREDENTIALS}" ]; then
-            echo "Snapstore login is empty !"
+            echo "Snapstore login is empty!"
             exit 1
           fi
 
