@@ -1,0 +1,70 @@
+name: publish
+
+on:
+  workflow_call:
+    inputs:
+      snap-track:
+        default: latest
+        description: Snap Store channel track use for publication.
+        required: false
+        type: string
+    secrets:
+      snapstore-login:
+        description: Snap Store credential (see 'snapcraft export-login').
+        required: true
+
+jobs:
+  prepare-publish:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.get-snap-file.outputs.matrix }}
+    steps:
+
+      - name: Check Snapstore login
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapstore-login }}
+        run: |
+          # Check if the key is empty
+          if [ -z "${SNAPCRAFT_STORE_CREDENTIALS}" ]; then
+            echo "Snapstore login is empty!"
+            exit 1
+          fi
+
+      - name: Download snap artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+          pattern: 'workflow-build-snap-*'
+
+      - name: Retrieve snap file
+        id: get-snap-file
+        run: |
+          files=$(find . -name '*.snap' -printf "\"%h/%f\",")
+          echo "Files: ${files}"
+          jsonfiles=$(echo "[${files%?}]")
+          echo "JSON Files: ${jsonfiles}"
+          echo "matrix=${jsonfiles}" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: [prepare-publish]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        snap: ${{ fromJson(needs.prepare-publish.outputs.matrix) }}
+    steps:
+
+      - name: Download snap artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+          # @todo(artivis) The matrix is based on the snap filename to be published.
+          # Associate it the artifact name so that this job only downloads
+          # the one artifact it needs.
+          pattern: 'workflow-build-snap-*'
+
+      - name: Publish snap
+        uses: snapcore/action-publish@v1
+        with:
+          snap: ${{ matrix.snap }}
+          release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}
