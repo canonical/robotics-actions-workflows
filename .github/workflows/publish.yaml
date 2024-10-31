@@ -68,3 +68,4 @@ jobs:
         with:
           snap: ${{ matrix.snap }}
           release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}
+          store_login: ${{ secrets.snapstore-login }}
