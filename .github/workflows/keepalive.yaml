@@ -1,0 +1,21 @@
+name: Keep reposirory's scheduled workflows alive
+
+on:
+  workflow_call:
+    inputs:
+      workflow_files:
+        description: A comma separated list of workflow files to keep alive.
+        required: false
+        type: string
+
+jobs:
+  keepalive:
+    name: Keepalive
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          workflow_files: "${{ inputs.workflow_files }}"
