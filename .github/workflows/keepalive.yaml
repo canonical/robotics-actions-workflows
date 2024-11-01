@@ -8,14 +8,12 @@ on:
         required: false
         type: string
 
-permissions:
-  actions: write
-
 jobs:
   keepalive:
     name: Keepalive
     runs-on: ubuntu-latest
-    if: ${{ inputs.workflow_files != '' }}
+    permissions:
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: gautamkrishnar/keepalive-workflow@v2
