@@ -41,6 +41,7 @@ The reusable workflows are:
 - [build.yaml](.github/workflows/build.yaml) - the workflow to build the snap.
 - [test.yaml](.github/workflows/test.yaml) - the workflow to test the snap.
 - [publish.yaml](.github/workflows/publish.yaml) - the workflow to publish the snap.
+- [keepalive.yaml](.github/workflows/keepalive.yaml) - keeps scheduled workflows alive.
 
 ### The snap workflow
 
@@ -151,3 +152,14 @@ The `publish` uses the following subset of options from the `snap` workflow:
 - `snap-track`
 
 A complete working example can be found [here](https://github.com/canonical/turtlebot3c-snap/blob/main/.github/workflows/snap.yaml).
+
+### The keepalive workflow
+
+The [keepalive](.github/workflows/keepalive.yaml) workflow prevent scheduled workflows from being disable by GitHub after some time due to inactivity.
+It makes use of the [gautamkrishnar/keepalive-workflow](https://github.com/gautamkrishnar/keepalive-workflow) action.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `workflow_files` |  | A comma separated list of workflow files to keep alive. | true |
