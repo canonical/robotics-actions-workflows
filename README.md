@@ -162,4 +162,4 @@ It makes use of the [gautamkrishnar/keepalive-workflow](https://github.com/gauta
 
 | Option | Default Value | Description | Required |
 |---|---|---|---|
-| `workflow_files` |  | A comma separated list of workflow files to keep alive. | true |
+| `workflow_files` |  | A comma separated list of workflow files to keep alive. | false |

@@ -5,7 +5,7 @@ on:
     inputs:
       workflow_files:
         description: A comma separated list of workflow files to keep alive.
-        required: true
+        required: false
         type: string
 
 permissions:
