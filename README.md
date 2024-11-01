@@ -41,6 +41,7 @@ The reusable workflows are:
 - [build.yaml](.github/workflows/build.yaml) - the workflow to build the snap.
 - [test.yaml](.github/workflows/test.yaml) - the workflow to test the snap.
 - [publish.yaml](.github/workflows/publish.yaml) - the workflow to publish the snap.
+- [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
 
 ### The snap workflow
 
@@ -157,3 +158,21 @@ The `publish` uses the following subset of options from the `snap` workflow:
 - `snap-track`
 
 A complete working example can be found [here](https://github.com/canonical/turtlebot3c-snap/blob/main/.github/workflows/snap.yaml).
+
+### The promote workflow
+
+The [promote](.github/workflows/promote.yaml) workflow promotes a given snap from a channel to another.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `snap` |  | The snap to promote. | true |
+| `from-channel` | latest/candidate | The channel from which to promote. | false |
+| `to-channel` | latest/stable | The channel to which to promote. | false |
+
+#### Secrets
+
+| Secret | Description | Required |
+|---|---|---|---|
+| `snapstore-login` | Store credential (see 'snapcraft export-login'). | true |
