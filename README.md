@@ -74,6 +74,12 @@ For further configurations, see each sub-workflow details below.
 | `snapcraft-enable-experimental-extensions` | false | Whether to enable Snapcraft experimental extensions or not. | false |
 | `snapcraft-source-subdir` | ' . ' | The path where to execute snapcraft. | false |
 
+#### Secrets
+
+| Secret | Description | Required |
+|---|---|---|---|
+| `snapstore-login` | Store credential (see 'snapcraft export-login'). | false |
+
 ### The build workflow
 
 The [build](.github/workflows/build.yaml) workflow,
