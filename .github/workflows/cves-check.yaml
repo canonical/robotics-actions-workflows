@@ -57,13 +57,13 @@ jobs:
       - name: Check notices
         id: check_notice
         run: | 
-          CVES_DICT=$(review-tools.check-notices ${{ inputs.snap-name}}_*.snap | jq -c '."${{ inputs.snap-name }}" | . []')
+          CVES_DICT=$(review-tools.check-notices ${{ inputs.snap-name }}_*.snap | jq -c '."${{ inputs.snap-name }}" | . []')
           RESULT=$(echo $CVES_DICT | jq -r 'length >0')
           if [[ "$RESULT" == "true" ]]; then
-            echo "Your package contains known CVEs!"
+            echo "The snap ${{ inputs.snap-name }} contains known CVEs!"
             echo "The following CVEs are detected in your package: ${CVES_DICT}"
           else
-            echo "No known CVEs found!"
+            echo "No known CVEs found."
           fi
           echo "cves_found=${RESULT}" >> $GITHUB_OUTPUT
           echo "cves_dict=${CVES_DICT}" >> $GITHUB_OUTPUT
