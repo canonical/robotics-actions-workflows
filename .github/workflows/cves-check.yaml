@@ -3,28 +3,27 @@ name: Check for CVE in a snap
 on:
   workflow_call:
     inputs:
-      snap-name:
-        description: The name of the snap to scan.
-        required: true
-        type: string
       channel:
+        default: "latest/stable"
         description: The channel of the snap to scan.
         required: false
         type: string
-        default: "latest/stable"
       runs-on:
         default: 'ubuntu-latest'
         description: The runner(s) to use.
         required: false
         type: string
+      snap-name:
+        description: The name of the snap to scan.
+        required: true
+        type: string
     outputs:
-      cves-found:
-        description: "Whether CVEs were found or not. Returns `true` or `false`."
-        value: ${{ jobs.CVE-scan.outputs.cves-found }}
       cves-dict:
         description: "The dictionary of found CVEs."
         value: ${{ jobs.CVE-scan.outputs.cves-dict }}
-      
+      cves-found:
+        description: "Whether CVEs were found or not. Returns `true` or `false`."
+        value: ${{ jobs.CVE-scan.outputs.cves-found }}
 
 
 jobs:

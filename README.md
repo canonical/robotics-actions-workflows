@@ -174,14 +174,14 @@ This workflow can be ran on any snap built with the [canonical/action-build](htt
 
 | Inputs | Default Value | Description | Required |
 |---|---|---|---|
-| `snap-name` |  | The name of the snap to scan. | true |
 | `channel` | `latest/stable` | The channel of the snap to scan. | false |
 | `runs-on` | `ubuntu-latest` | The runner(s) to use. | false |
+| `snap-name` |  | The name of the snap to scan. | true |
 
 
 #### Outputs
 
 | Ouputs | Description |
 |---|---|
-| `cves-found` | Whether CVEs were found or not. Returns `true` or `false`. |
 | `cves-dict` | The dictionary of found CVEs. |
+| `cves-found` | Whether CVEs were found or not. Returns `true` or `false`. |
