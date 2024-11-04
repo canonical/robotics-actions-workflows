@@ -1,0 +1,70 @@
+name: Check for CVE in a snap
+
+on:
+  workflow_call:
+    inputs:
+      snap-name:
+        description: The name of the snap to scan.
+        required: true
+        type: string
+      channel:
+        description: The channel of the snap to scan.
+        required: false
+        type: string
+        default: "latest/stable"
+      runs-on:
+        default: 'ubuntu-latest'
+        description: The runner(s) to use.
+        required: false
+        type: string
+    outputs:
+      cves-found:
+        description: "Whether CVEs were found or not. Returns `true` or `false`."
+        value: ${{ jobs.CVE-scan.outputs.cves-found }}
+      cves-dict:
+        description: "The dictionary of found CVEs."
+        value: ${{ jobs.CVE-scan.outputs.cves-dict }}
+      
+
+
+jobs:
+  prepare-scan-runners:
+    runs-on: ubuntu-latest
+    outputs:
+      runs-on: ${{ steps.string-to-json.outputs.json }}
+    steps:
+      - name: String to JSON list
+        id: string-to-json
+        uses: canonical/robotics-actions-workflows/string-to-json@main
+        with:
+          string: ${{ inputs.runs-on }}
+
+  CVE-scan:
+    name: CVEs scan
+    needs: [prepare-scan-runners]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: ${{ fromJSON(needs.prepare-scan-runners.outputs.runs-on) }}
+    outputs:
+      cves-found: ${{ steps.check_notice.outputs.cves_found }}
+      cves-dict: ${{ steps.check_notice.outputs.cves_dict }}
+    steps:
+      - name: Install review-tools
+        run: sudo snap install review-tools
+      - name: Dowload the sap file
+        run: snap download ${{ inputs.snap-name }} --channel=${{ inputs.channel }}
+      - name: Check notices
+        id: check_notice
+        run: | 
+          CVES_DICT=$(review-tools.check-notices ${{ inputs.snap-name}}_*.snap | jq -c '."${{ inputs.snap-name }}" | . []')
+          RESULT=$(echo $CVES_DICT | jq -r 'length >0')
+          if [[ "$RESULT" == "true" ]]; then
+            echo "Your package contains known CVEs!"
+            echo "The following CVEs are detected in your package: ${CVES_DICT}"
+          else
+            echo "No known CVEs found!"
+          fi
+          echo "cves_found=${RESULT}" >> $GITHUB_OUTPUT
+          echo "cves_dict=${CVES_DICT}" >> $GITHUB_OUTPUT
