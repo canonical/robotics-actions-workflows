@@ -79,7 +79,7 @@ For further configurations, see each sub-workflow details below.
 #### Secrets
 
 | Secret | Description | Required |
-|---|---|---|---|
+|---|---|---|
 | `snapstore-login` | Store credential (see 'snapcraft export-login'). | false |
 
 ### The build workflow
@@ -186,5 +186,5 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 #### Secrets
 
 | Secret | Description | Required |
-|---|---|---|---|
+|---|---|---|
 | `snapstore-login` | Store credential (see 'snapcraft export-login'). | true |
