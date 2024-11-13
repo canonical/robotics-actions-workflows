@@ -42,7 +42,9 @@ The reusable workflows are:
 - [test.yaml](.github/workflows/test.yaml) - the workflow to test the snap.
 - [publish.yaml](.github/workflows/publish.yaml) - the workflow to publish the snap.
 - [keepalive.yaml](.github/workflows/keepalive.yaml) - keeps scheduled workflows alive.
+- [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
 - [cves-check.yaml](.github/workflows/cves-check.yaml) - Check for CVEs in the snap.
+
 
 ### The snap workflow
 
@@ -75,6 +77,12 @@ For further configurations, see each sub-workflow details below.
 | `snapcraft-channel` | latest/stable | The channel from which to install Snapcraft. | false |
 | `snapcraft-enable-experimental-extensions` | false | Whether to enable Snapcraft experimental extensions or not. | false |
 | `snapcraft-source-subdir` | ' . ' | The path where to execute snapcraft. | false |
+
+#### Secrets
+
+| Secret | Description | Required |
+|---|---|---|
+| `snapstore-login` | Store credential (see 'snapcraft export-login'). | false |
 
 ### The build workflow
 
@@ -164,6 +172,24 @@ It makes use of the [gautamkrishnar/keepalive-workflow](https://github.com/gauta
 | Option | Default Value | Description | Required |
 |---|---|---|---|
 | `workflow_files` |  | A comma separated list of workflow files to keep alive. | false |
+
+### The promote workflow
+
+The [promote](.github/workflows/promote.yaml) workflow promotes a given snap from a channel to another.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `snap` |  | The snap to promote. | true |
+| `from-channel` | latest/candidate | The channel from which to promote. | false |
+| `to-channel` | latest/stable | The channel to which to promote. | false |
+
+#### Secrets
+
+| Secret | Description | Required |
+|---|---|---|
+| `snapstore-login` | Store credential (see 'snapcraft export-login'). | true |
 
 ### The CVEs check workflow
 
