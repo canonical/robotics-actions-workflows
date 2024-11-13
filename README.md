@@ -43,6 +43,8 @@ The reusable workflows are:
 - [publish.yaml](.github/workflows/publish.yaml) - the workflow to publish the snap.
 - [keepalive.yaml](.github/workflows/keepalive.yaml) - keeps scheduled workflows alive.
 - [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
+- [cves-check.yaml](.github/workflows/cves-check.yaml) - Check for CVEs in the snap.
+
 
 ### The snap workflow
 
@@ -188,3 +190,24 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 | Secret | Description | Required |
 |---|---|---|
 | `snapstore-login` | Store credential (see 'snapcraft export-login'). | true |
+
+### The CVEs check workflow
+
+The [cves-check](.github/workflows/cves-check.yaml) workflow check for known CVEs in a snap uploaded on the store.
+This workflow can be ran on any snap built with the [canonical/action-build](https://github.com/canonical/action-build) action, the [build](.github/workflows/build.yaml) reusable workflow or for any snap built with the `--manifest` option (more information on [forum.snapcraft.io](https://forum.snapcraft.io/t/checking-ubuntu-security-notices-for-a-snap/23410)).
+
+#### Inputs
+
+| Inputs | Default Value | Description | Required |
+|---|---|---|---|
+| `channel` | `latest/stable` | The channel of the snap to scan. | false |
+| `runs-on` | `ubuntu-latest` | The runner(s) to use. | false |
+| `snap-name` |  | The name of the snap to scan. | true |
+
+
+#### Outputs
+
+| Ouputs | Description |
+|---|---|
+| `cves-dict` | The dictionary of found CVEs. |
+| `cves-found` | Whether CVEs were found or not. Returns `true` or `false`. |
