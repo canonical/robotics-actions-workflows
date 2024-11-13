@@ -52,7 +52,7 @@ jobs:
     steps:
       - name: Install review-tools
         run: sudo snap install review-tools
-      - name: Dowload the sap file
+      - name: Dowload the snap file
         run: snap download ${{ inputs.snap }} --channel=${{ inputs.channel }}
       - name: Check notices
         id: check_notice
