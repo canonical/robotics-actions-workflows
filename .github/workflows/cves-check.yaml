@@ -21,9 +21,9 @@ on:
       cves-dict:
         description: "The dictionary of found CVEs."
         value: ${{ jobs.CVE-scan.outputs.cves-dict }}
-      cves-found:
+      has-cves:
         description: "Whether CVEs were found or not. Returns `true` or `false`."
-        value: ${{ jobs.CVE-scan.outputs.cves-found }}
+        value: ${{ jobs.CVE-scan.outputs.has-cves }}
 
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
       matrix:
         runs-on: ${{ fromJSON(needs.prepare-scan-runners.outputs.runs-on) }}
     outputs:
-      cves-found: ${{ steps.check_notice.outputs.cves_found }}
+      has-cves: ${{ steps.check_notice.outputs.has_cves }}
       cves-dict: ${{ steps.check_notice.outputs.cves_dict }}
     steps:
       - name: Install review-tools
@@ -65,5 +65,5 @@ jobs:
           else
             echo "No known CVEs found."
           fi
-          echo "cves_found=${RESULT}" >> $GITHUB_OUTPUT
+          echo "has_cves=${RESULT}" >> $GITHUB_OUTPUT
           echo "cves_dict=${CVES_DICT}" >> $GITHUB_OUTPUT
