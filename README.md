@@ -139,6 +139,7 @@ The `test` uses the following subset of options from the `snap` workflow:
 
 - `lxd-image`
 - `runs-on`
+- `git-ref`
 - `snap-install-args`
 - `snap-test-script`
 
