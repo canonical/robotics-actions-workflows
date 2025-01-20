@@ -80,6 +80,7 @@ jobs:
     with:
       lxd-image: ${{ inputs.lxd-image }}
       runs-on: ${{ inputs.runs-on }}
+      git-ref: ${{ inputs.git-ref }}
       snap-install-args: ${{ inputs.snap-install-args }}
       snap-test-script: ${{ inputs.snap-test-script }}
 
