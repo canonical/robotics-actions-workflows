@@ -20,7 +20,7 @@ on:
 
 jobs:
   compare:
-    uses: canonical/robotics-actions-workflows/.github/workflows/upstream-monitor.yaml@main
+    uses: canonical/robotics-actions-workflows/.github/workflows/upstream-monitor.yaml@feat/upstream-sync
     with:
       git-ref: ${{ inputs.git-ref }}
       script-compare-versions: |
