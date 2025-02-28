@@ -1,0 +1,130 @@
+name: monitor-upstream
+
+on:
+  workflow_call:
+    inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Defaults to the current git ref.
+        required: false
+        type: string
+      script-compare-versions:
+        description: A bash script to compare versions.
+        required: true
+        type: string
+      script-get-upstream-version:
+        description: A bash script to retrieve the upstream version.
+        required: true
+        type: string
+      snapcraft-source-subdir:
+        default: '.'
+        description: The path where to execute snapcraft. Defaults to '.'.
+        required: false
+        type: string
+    # secrets:
+    #   token:
+    #     default: ${{ github.token }}
+
+jobs:
+  compare:
+    runs-on: 'ubuntu-latest'
+    steps:
+
+      - name: Install dependencies
+        run: sudo snap install yq
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Find and parse snapcraft.yaml
+        id: parse
+        env:
+          project_root: ${{ inputs.snapcraft-source-subdir }}
+        run: |
+          # If no project path is specified, default to top-level of repo
+          project_root="${project_root:-.}"
+
+          valid_paths=(
+            "${project_root}/.snapcraft.yaml"
+            "${project_root}/build-aux/snap/snapcraft.yaml"
+            "${project_root}/snap/snapcraft.yaml"
+            "${project_root}/snapcraft.yaml"
+          )
+
+          for file in "${valid_paths[@]}"; do
+              if [[ -f "$file" ]]; then
+                  yaml_path="$file"
+              fi
+          done
+
+          if [[ -z "${yaml_path}" ]]; then
+            echo "No snapcraft.yaml found"
+            exit 1
+          fi
+
+          if yq '. | has("adopt-info")' "$yaml_path" && yq '.parts[.adopt-info] | has("source-tag")' "$yaml_path"; then
+            echo "version=$(yq '.parts[.adopt-info].source-tag' "$yaml_path")" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(yq -r '.version' "$yaml_path")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create get-upstream-version script
+        shell: bash
+        run: |
+          cat > get-upstream-version << EOF
+            ${{ inputs.script-get-upstream-version }}
+          EOF
+
+      - name: Run get-upstream-version script
+        id: get-upstream-version
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "upstream_version=$(./get-upstream-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Create script-compare-versions script
+        shell: bash
+        run: |
+          cat > compare-versions  << EOF
+            ${{ inputs.script-compare-versions }}
+          EOF
+
+      - name: Compare versions
+        id: compare
+        continue-on-error: true
+        env:
+          SNAP_VERSION: ${{ steps.parse.outputs.version }}
+          UPSTREAM_VERSION: ${{ steps.get-upstream-version.outputs.upstream-version }}
+        run: |
+          set -euxo pipefail
+          #echo "version_comparison=$(./compare-versions.sh)" >> "$GITHUB_OUTPUT"
+          ./compare-versions \"${UPSTREAM_VERSION}\" \"${SNAP_VERSION}\"
+
+      - name: Create Issue
+        uses: dacbd/create-issue-action@v2
+        if: steps.compare.outcome != 'success'
+        with:
+          token: ${{ github.token }}
+          title: |
+            [${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream
+
+          # Auto-assign person who triggered the failure.
+          # assignees: ${{ github.actor }},${{ github.triggering_actor }}
+          # labels: CI/CD
+          body: |
+            ## Monitoring Report:
+
+            > [!IMPORTANT]
+            > Details on failed run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            - Author: @${{ github.triggering_actor }}
+            - Branch: `${{ github.ref }}`
+            - Commit: ${{ github.sha }}
+            - Workflow Path: `${{ github.workflow_ref }}`
+
+            The workflow found a new version upstream.
+            Please consider upgrading the snap.
+
+            Found version: '${{ steps.get-upstream-version.outputs.upstream-version }}'.
