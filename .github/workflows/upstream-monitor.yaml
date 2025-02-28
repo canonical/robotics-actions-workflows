@@ -1,4 +1,4 @@
-name: monitor-upstream
+name: upstream-monitor
 
 on:
   workflow_call:

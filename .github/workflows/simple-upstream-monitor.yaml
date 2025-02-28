@@ -1,4 +1,4 @@
-name: simple-upstream-sync
+name: simple-upstream-monitor
 
 on:
   workflow_call:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   compare:
-    uses: canonical/robotics-actions-workflows/.github/workflows/monitor-upstream.yaml@main
+    uses: canonical/robotics-actions-workflows/.github/workflows/upstream-monitor.yaml@main
     with:
       git-ref: ${{ inputs.git-ref }}
       script-compare-versions: |
