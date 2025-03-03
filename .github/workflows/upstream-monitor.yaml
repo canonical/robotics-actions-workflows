@@ -21,9 +21,6 @@ on:
         description: The path where to execute snapcraft. Defaults to '.'.
         required: false
         type: string
-    # secrets:
-    #   token:
-    #     default: ${{ github.token }}
 
 jobs:
   compare:
@@ -40,7 +37,7 @@ jobs:
         with:
           ref: '${{ inputs.git-ref }}'
 
-      - name: Find and parse snapcraft.yaml
+      - name: Find and parse snapcraft.yaml to retrieve the version
         id: parse
         env:
           project_root: ${{ inputs.snapcraft-source-subdir }}
@@ -111,33 +108,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue --repo ${{ github.repository }} create \
-            --title "[${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
-            --body "Issue body"
+          search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
+            --search '${{ steps.get-upstream-version.outputs.upstream-version }} in:title' --json number)"
 
-      # - name: Create Issue
-      #   uses: dacbd/create-issue-action@v2
-      #   if: steps.compare.outcome != 'success'
-      #   with:
-      #     token: ${{ github.token }}
-      #     title: |
-      #       [${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream
+          if [[ "${search_issue}" =~ "number" ]]; then
 
-      #     # Auto-assign person who triggered the failure.
-      #     # assignees: ${{ github.actor }},${{ github.triggering_actor }}
-      #     # labels: CI/CD
-      #     body: |
-      #       ## Monitoring Report:
+            echo "Creating a new issue."
 
-      #       > [!IMPORTANT]
-      #       > Details on failed run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-      #       - Author: @${{ github.triggering_actor }}
-      #       - Branch: `${{ github.ref }}`
-      #       - Commit: ${{ github.sha }}
-      #       - Workflow Path: `${{ github.workflow_ref }}`
-
-      #       The workflow found a new version upstream.
-      #       Please consider upgrading the snap.
-
-      #       Found version: '${{ steps.get-upstream-version.outputs.upstream-version }}'.
+            echo -e "## Monitoring report\n\n" \
+            "- Author: @${{ github.triggering_actor }}\n" \
+            "- Branch: `${{ github.ref }}`\n" \
+            "- Commit: ${{ github.sha }}\n" \
+            "- Workflow Path: `${{ github.workflow_ref }}`\n\n" \
+            "The workflow found a new version upstream: '${{ steps.get-upstream-version.outputs.upstream-version }}'.\n" \
+            "Please consider upgrading the snap.\n\n" \
+            "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            " | " \
+            gh issue --repo ${{ github.repository }} create \
+              --title "[CI] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
+              --body-file -
+          else
+            echo "Issue already opened."
+          fi
