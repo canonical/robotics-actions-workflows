@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           cat > get-upstream-version << EOF
-            ${{ inputs.script-get-upstream-version }}
+            '${{ inputs.script-get-upstream-version }}'
           EOF
           chmod +x get-upstream-version
 
@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           cat > compare-versions  << EOF
-            ${{ inputs.script-compare-versions }}
+            '${{ inputs.script-compare-versions }}'
           EOF
           chmod +x compare-version
 
