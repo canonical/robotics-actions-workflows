@@ -93,7 +93,7 @@ jobs:
           cat > compare-versions << 'EOF'
             ${{ inputs.script-compare-versions }}
           EOF
-          chmod +x compare-version
+          chmod +x compare-versions
 
       - name: Compare versions
         id: compare
