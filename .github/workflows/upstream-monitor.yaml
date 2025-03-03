@@ -123,7 +123,7 @@ jobs:
             "The workflow found a new version upstream: '${{ steps.get-upstream-version.outputs.upstream-version }}'.\n" \
             "Please consider upgrading the snap.\n\n" \
             "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            " | " \
+            | \
             gh issue --repo ${{ github.repository }} create \
               --title "[CI] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
               --body-file -
