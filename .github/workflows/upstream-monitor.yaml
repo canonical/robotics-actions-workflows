@@ -56,9 +56,9 @@ jobs:
           )
 
           for file in "${valid_paths[@]}"; do
-              if [[ -f "$file" ]]; then
-                  yaml_path="$file"
-              fi
+            if [[ -f "$file" ]]; then
+              yaml_path="$file"
+            fi
           done
 
           if [[ -z "${yaml_path}" ]]; then
@@ -78,6 +78,7 @@ jobs:
           cat > get-upstream-version << EOF
             ${{ inputs.script-get-upstream-version }}
           EOF
+          chmod +x get-upstream-version
 
       - name: Run get-upstream-version script
         id: get-upstream-version
@@ -92,6 +93,7 @@ jobs:
           cat > compare-versions  << EOF
             ${{ inputs.script-compare-versions }}
           EOF
+          chmod +x compare-version
 
       - name: Compare versions
         id: compare
@@ -104,29 +106,40 @@ jobs:
           #echo "version_comparison=$(./compare-versions.sh)" >> "$GITHUB_OUTPUT"
           ./compare-versions \"${UPSTREAM_VERSION}\" \"${SNAP_VERSION}\"
 
-      - name: Create Issue
-        uses: dacbd/create-issue-action@v2
+
+
+      - name: Open issue
         if: steps.compare.outcome != 'success'
-        with:
-          token: ${{ github.token }}
-          title: |
-            [${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream
+        run: |
+          gh issue --repo ${{ github.repository }} create \
+            --title "[${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
+            --body "Issue body"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # Auto-assign person who triggered the failure.
-          # assignees: ${{ github.actor }},${{ github.triggering_actor }}
-          # labels: CI/CD
-          body: |
-            ## Monitoring Report:
+      # - name: Create Issue
+      #   uses: dacbd/create-issue-action@v2
+      #   if: steps.compare.outcome != 'success'
+      #   with:
+      #     token: ${{ github.token }}
+      #     title: |
+      #       [${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream
 
-            > [!IMPORTANT]
-            > Details on failed run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      #     # Auto-assign person who triggered the failure.
+      #     # assignees: ${{ github.actor }},${{ github.triggering_actor }}
+      #     # labels: CI/CD
+      #     body: |
+      #       ## Monitoring Report:
 
-            - Author: @${{ github.triggering_actor }}
-            - Branch: `${{ github.ref }}`
-            - Commit: ${{ github.sha }}
-            - Workflow Path: `${{ github.workflow_ref }}`
+      #       > [!IMPORTANT]
+      #       > Details on failed run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-            The workflow found a new version upstream.
-            Please consider upgrading the snap.
+      #       - Author: @${{ github.triggering_actor }}
+      #       - Branch: `${{ github.ref }}`
+      #       - Commit: ${{ github.sha }}
+      #       - Workflow Path: `${{ github.workflow_ref }}`
 
-            Found version: '${{ steps.get-upstream-version.outputs.upstream-version }}'.
+      #       The workflow found a new version upstream.
+      #       Please consider upgrading the snap.
+
+      #       Found version: '${{ steps.get-upstream-version.outputs.upstream-version }}'.
