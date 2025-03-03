@@ -104,18 +104,16 @@ jobs:
         run: |
           set -euxo pipefail
           #echo "version_comparison=$(./compare-versions.sh)" >> "$GITHUB_OUTPUT"
-          ./compare-versions \"${UPSTREAM_VERSION}\" \"${SNAP_VERSION}\"
-
-
+          ./compare-versions "${UPSTREAM_VERSION}" "${SNAP_VERSION}"
 
       - name: Open issue
         if: steps.compare.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh issue --repo ${{ github.repository }} create \
             --title "[${{ github.workflow }}] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
             --body "Issue body"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # - name: Create Issue
       #   uses: dacbd/create-issue-action@v2
