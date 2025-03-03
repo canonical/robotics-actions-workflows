@@ -117,9 +117,9 @@ jobs:
 
             echo -e "## Monitoring report\n\n" \
             "- Author: @${{ github.triggering_actor }}\n" \
-            "- Branch: `${{ github.ref }}`\n" \
+            "- Branch: '${{ github.ref }}'\n" \
             "- Commit: ${{ github.sha }}\n" \
-            "- Workflow Path: `${{ github.workflow_ref }}`\n\n" \
+            "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
             "The workflow found a new version upstream: '${{ steps.get-upstream-version.outputs.upstream-version }}'.\n" \
             "Please consider upgrading the snap.\n\n" \
             "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
