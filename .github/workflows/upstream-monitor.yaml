@@ -80,6 +80,8 @@ jobs:
       - name: Run get-upstream-version script
         id: get-upstream-version
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
           echo "upstream-version=$(./get-upstream-version)" >> "$GITHUB_OUTPUT"
