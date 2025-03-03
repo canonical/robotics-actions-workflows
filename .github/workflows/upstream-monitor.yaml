@@ -85,7 +85,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          echo "upstream_version=$(./get-upstream-version)" >> "$GITHUB_OUTPUT"
+          echo "upstream-version=$(./get-upstream-version)" >> "$GITHUB_OUTPUT"
 
       - name: Create script-compare-versions script
         shell: bash
