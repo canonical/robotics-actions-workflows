@@ -111,7 +111,7 @@ jobs:
           search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
             --search '${{ steps.get-upstream-version.outputs.upstream-version }} in:title' --json number)"
 
-          if [[ "${search_issue}" =~ "number" ]]; then
+          if [[ ! "${search_issue}" =~ "number" ]]; then
 
             echo "Creating a new issue."
 
