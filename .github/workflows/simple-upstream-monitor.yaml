@@ -36,4 +36,4 @@ jobs:
       #     | jq -r 'select(.prerelease == false) | .tag_name')
       #   echo "${TAG}"
       script-get-upstream-version: echo "0.22.1"
-      snapcraft-source-sub-dir: ${{ inputs.snapcraft-source-subdir }}
+      snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
