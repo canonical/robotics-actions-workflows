@@ -104,8 +104,8 @@ jobs:
         id: compare
         continue-on-error: true
         env:
-          SNAP_VERSION: ${{ steps.parse.outputs.snap-version }}
-          UPSTREAM_VERSION: ${{ steps.get-upstream-version.outputs.upstream-version }}
+          SNAP_VERSION: "${{ steps.parse.outputs.snap-version }}"
+          UPSTREAM_VERSION: "${{ steps.get-upstream-version.outputs.upstream-version }}"
         run: |
           set -euxo pipefail
           ./compare-versions "${UPSTREAM_VERSION}" "${SNAP_VERSION}"
