@@ -63,10 +63,10 @@ jobs:
             exit 1
           fi
 
-          if yq '. | has("adopt-info")' "$yaml_path" && yq '.parts[.adopt-info] | has("source-tag")' "$yaml_path"; then
-            version=$(yq '.parts[.adopt-info].source-tag' "$yaml_path")
+          if yq '. | has("adopt-info")' "${yaml_path}" && yq '.parts[.adopt-info] | has("source-tag")' "${yaml_path}"; then
+            version="$(yq '.parts[.adopt-info].source-tag' ${yaml_path})"
           else
-            version=$(yq -r '.version' "$yaml_path")
+            version="$(yq -r '.version' ${yaml_path})"
           fi
 
           if [ -z "${version}" ]; then exit 1; fi
