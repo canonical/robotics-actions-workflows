@@ -24,7 +24,7 @@ jobs:
     with:
       git-ref: ${{ inputs.git-ref }}
       script-get-upstream-version: |
-        gh release --repo ${{ inputs.source-repo }} view --json tagName | jq .tagName
+        gh release --repo ${{ inputs.source-repo }} view --json tagName -q .tagName
       script-compare-versions: |
         wget https://raw.githubusercontent.com/Ariel-Rodriguez/sh-semversion-2/refs/tags/v1.0.5/semver2.sh -O semver2.sh
         chmod +x semver2.sh
