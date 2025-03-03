@@ -28,6 +28,8 @@ on:
 jobs:
   compare:
     runs-on: 'ubuntu-latest'
+    permissions:
+      issues: write
     steps:
 
       - name: Install dependencies
