@@ -36,5 +36,6 @@ jobs:
       #     https://api.github.com/repos/${{ inputs.source-repo }}/releases/latest \
       #     | jq -r 'select(.prerelease == false) | .tag_name')
       #   echo "${TAG}"
-      script-get-upstream-version: echo "0.22.1"
+      script-get-upstream-version: |
+        gh release --repo ${{ inputs.source-repo }} view --json tagName | jq .tagName
       snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
