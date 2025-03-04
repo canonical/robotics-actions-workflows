@@ -127,8 +127,8 @@ jobs:
 
             echo "Creating a new issue."
 
-            extra_args=''
-            if [ -z "${{ inputs.issue-assignee }}" ]; then
+            extra_args=""
+            if [ ! -z "${{ inputs.issue-assignee }}" ]; then
               extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
             fi
 
@@ -143,7 +143,7 @@ jobs:
             | \
             gh issue --repo ${{ github.repository }} create \
               --title "[CI] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
-              "${extra_args} \
+              "${extra_args}" \
               --body-file -
           else
             echo "Issue already opened."
