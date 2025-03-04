@@ -8,6 +8,11 @@ on:
         description: The branch to checkout. Defaults to the current git ref.
         required: false
         type: string
+      issue-assignee:
+        default: ''
+        description: The issue assignee in the form '@name'. Defaults to no one.
+        required: false
+        type: string
       snapcraft-source-subdir:
         default: '.'
         description: The path where to execute snapcraft. Defaults to '.'.
@@ -23,11 +28,12 @@ jobs:
     uses: canonical/robotics-actions-workflows/.github/workflows/upstream-monitor.yaml@feat/upstream-sync
     with:
       git-ref: ${{ inputs.git-ref }}
-      script-get-upstream-version: |
-        gh release --repo ${{ inputs.source-repo }} view --json tagName -q .tagName
+      issue-assignee: ${{ inputs.issue-assignee }}
       script-compare-versions: |
         wget https://raw.githubusercontent.com/Ariel-Rodriguez/sh-semversion-2/refs/tags/v1.0.5/semver2.sh -O semver2.sh
         chmod +x semver2.sh
         RET=$(./semver2.sh "${1}" "${2}")
         if [ "${RET}" == "1" ]; then exit 1; fi
+      script-get-upstream-version: |
+        gh release --repo ${{ inputs.source-repo }} view --json tagName -q .tagName
       snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
