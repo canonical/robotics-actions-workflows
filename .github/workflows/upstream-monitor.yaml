@@ -8,6 +8,11 @@ on:
         description: The branch to checkout. Defaults to the current git ref.
         required: false
         type: string
+      issue-assignee:
+        default: ''
+        description: The issue assignee in the form '@name'. Defaults to no one.
+        required: false
+        type: string
       script-compare-versions:
         description: A bash script to compare versions.
         required: true
@@ -122,6 +127,11 @@ jobs:
 
             echo "Creating a new issue."
 
+            extra_args=''
+            if [ -z "${{ inputs.issue-assignee }}" ]; then
+              extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
+            fi
+
             echo -e "## Monitoring report\n\n" \
             "- Author: @${{ github.triggering_actor }}\n" \
             "- Branch: '${{ github.ref }}'\n" \
@@ -133,6 +143,7 @@ jobs:
             | \
             gh issue --repo ${{ github.repository }} create \
               --title "[CI] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
+              "${extra_args} \
               --body-file -
           else
             echo "Issue already opened."
