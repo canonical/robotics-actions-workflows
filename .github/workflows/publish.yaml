@@ -3,6 +3,12 @@ name: publish
 on:
   workflow_call:
     inputs:
+      snap-risk:
+        default: ""
+        description: Snap Store channel risk use for publication. Defaults to 'edge'
+          unless the git ref is a tag in which case defaults to 'candidate'.
+        required: false
+        type: string
       snap-track:
         default: latest
         description: Snap Store channel track use for publication.
@@ -63,11 +69,33 @@ jobs:
           # the one artifact it needs.
           pattern: 'workflow-build-snap-*'
 
+      - name: Set snap channel
+        id: set-snap-channel
+        env:
+          SNAP_TRACK: ${{ inputs.snap-track }}
+          SNAP_RISK: ${{ inputs.snap-risk }}
+          GIT_REF: ${{ github.ref }}
+        run: |
+
+          # Defaults to 'edge'
+          SNAP_CHANNEL="${SNAP_TRACK}/edge"
+
+          # If the git ref is a tag, use 'candidate'
+          if [[ "${GIT_REF}" == "refs/tags/"* ]]; then
+            SNAP_CHANNEL="${SNAP_TRACK}/candidate"
+          fi
+
+          # If the risk is set by the user, use that
+          if [ ! -z "${SNAP_RISK}" ]; then
+            SNAP_CHANNEL="${SNAP_TRACK}/${SNAP_RISK}"
+          fi
+
+          echo "snap-channel=${SNAP_CHANNEL}" >> "$GITHUB_OUTPUT"
+
       - name: Publish snap
         uses: canonical/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapstore-login }}
         with:
           snap: ${{ matrix.snap }}
-          release: ${{ inputs.snap-track }}/${{ startsWith(github.ref, 'refs/tags/') && 'candidate' || 'edge'}}
-
+          release: ${{ inputs.snap-track }}/${{ steps.set-snap-channel.outputs.snap-channel }}
