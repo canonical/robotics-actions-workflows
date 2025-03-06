@@ -44,6 +44,29 @@ The reusable workflows are:
 - [keepalive.yaml](.github/workflows/keepalive.yaml) - keeps scheduled workflows alive.
 - [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
 
+### General notes
+
+The reusable workflows proposed here generally consider (but are not restricted to) the following 2 use cases:
+
+- The `snapcraft.yaml` file lives alongside the source code.
+  This is the main use case.
+  On pull request, the snap is built and tested.
+  It can be retrieved as a workflow artifact for further local testing and tinkering.
+  On pushes & manual trigger (`workflow_call`),
+  the snap is built, tested and also released on the Store on the `edge` risk channel.
+  Only on tags is the snap released on `candidate`.
+  Promotion from `candidate` to `stable` is manual and expected to happen after thorough testing.
+- The snapcraft file lives in its own repository.
+  In this case the automated release schema is, in increasing precedence order:
+  by default, the snap is published on `edge`.
+  In case a tag triggered the workflow,
+  the snap is released on `candidate`.
+  At last, the user can explicitely set the risk.
+  The snap version is expected to be updated appropriately with respect to the upstream code.
+  Since keeping the snapcraft file, its git history and CI in sync with upstream can prove tedious,
+  it is recommended to to pin the source code version at a given tag (`parts.source-tag`),
+  and solely update the snap on new upstream tag.
+
 ### The snap workflow
 
 The [snap](.github/workflows/snap.yaml) workflow is the main reusable workflow.
@@ -70,6 +93,7 @@ For further configurations, see each sub-workflow details below.
 | `runs-on` | ubuntu-latest | The runner(s) to use. | false |
 | `snap-install-args` | --dangerous | The argument to pass to snap install. | false |
 | `snap-test-script` | ' ' | A test script to run against the snap. | false |
+| `snap-risk` | edge | Snap Store channel risk use for publication. | false |
 | `snap-track` | latest | Snap Store channel track use for publication. | false |
 | `snapcraft-args` | ' ' | The arguments to pass to snapcraft (pack). | false |
 | `snapcraft-channel` | latest/stable | The channel from which to install Snapcraft. | false |
@@ -157,6 +181,7 @@ Note that all snaps are published to the same track defined by `snap-track` (e.g
 
 The `publish` uses the following subset of options from the `snap` workflow:
 
+- `snap-risk`
 - `snap-track`
 
 A complete working example can be found [here](https://github.com/canonical/turtlebot3c-snap/blob/main/.github/workflows/snap.yaml).
