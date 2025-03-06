@@ -33,6 +33,12 @@ on:
         description: A test script to run against the snap.
         required: false
         type: string
+      snap-risk:
+        default: ""
+        description: Snap Store channel risk use for publication. Defaults to 'edge'
+          unless the git ref is a tag in which case defaults to 'candidate'.
+        required: false
+        type: string
       snap-track:
         default: latest
         description: Snap Store channel track use for publication.
@@ -104,6 +110,7 @@ jobs:
     needs: [build, test, check-snapstore-login]
     uses: ./.github/workflows/publish.yaml
     with:
+      snap-risk: ${{ inputs.snap-risk }}
       snap-track: ${{ inputs.snap-track }}
     secrets:
       snapstore-login: ${{ secrets.snapstore-login }}
