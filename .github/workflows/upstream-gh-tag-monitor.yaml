@@ -1,0 +1,38 @@
+name: upstream-gh-tag-monitor
+
+on:
+  workflow_call:
+    inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Defaults to the current git ref.
+        required: false
+        type: string
+      issue-assignee:
+        default: ''
+        description: The issue assignee in the form '@name'. Defaults to no one.
+        required: false
+        type: string
+      snapcraft-source-subdir:
+        default: '.'
+        description: The directory of the snapcraft project. Defaults to '.'.
+        required: false
+        type: string
+      source-repo:
+        description: The upstream repository to monitor in 'org/repo' form.
+        required: true
+        type: string
+
+jobs:
+  compare:
+    uses: ./.github/workflows/generic-upstream-monitor.yaml
+    with:
+      git-ref: ${{ inputs.git-ref }}
+      issue-assignee: ${{ inputs.issue-assignee }}
+      script-compare-versions: |
+        wget https://raw.githubusercontent.com/Ariel-Rodriguez/sh-semversion-2/refs/tags/v1.0.5/semver2.sh -O semver2.sh
+        chmod +x semver2.sh
+        ./semver2.sh "${1}" "${2}"
+      script-get-upstream-version: |
+        gh release --repo ${{ inputs.source-repo }} view --json tagName -q .tagName
+      snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
