@@ -1,4 +1,4 @@
-name: simple-upstream-monitor
+name: upstream-gh-tag-monitor
 
 on:
   workflow_call:
@@ -25,7 +25,7 @@ on:
 
 jobs:
   compare:
-    uses: canonical/robotics-actions-workflows/.github/workflows/upstream-monitor.yaml@feat/upstream-sync
+    uses: ./.github/workflows/generic-upstream-monitor.yaml
     with:
       git-ref: ${{ inputs.git-ref }}
       issue-assignee: ${{ inputs.issue-assignee }}
