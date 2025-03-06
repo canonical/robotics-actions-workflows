@@ -19,7 +19,7 @@ on:
         required: false
         type: string
       source-repo:
-        description: Repository of the source application in 'org/repo' form.
+        description: The upstream repository to monitor in 'org/repo' form.
         required: true
         type: string
 

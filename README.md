@@ -43,6 +43,8 @@ The reusable workflows are:
 - [publish.yaml](.github/workflows/publish.yaml) - the workflow to publish the snap.
 - [keepalive.yaml](.github/workflows/keepalive.yaml) - keeps scheduled workflows alive.
 - [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
+- [generic-upstream-monitor.yaml](.github/workflows/generic-upstream-monitor.yaml) - the workflow to monitor new upstream versions.
+- [upstream-gh-tag-monitor.yaml](.github/workflows/upstream-gh-tag-monitor.yaml) - the workflow to monitor new tag on an upstream repository.
 
 ### The snap workflow
 
@@ -189,3 +191,42 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 | Secret | Description | Required |
 |---|---|---|
 | `snapstore-login` | Store credential (see 'snapcraft export-login'). | true |
+
+### The generic-upstream-monitor workflow
+
+The [generic-upstream-monitor](.github/workflows/generic-upstream-monitor.yaml) workflow aims at monitoring upstream for new version of the software.
+This workflow is meant to be used when the `snapcraft.yaml` file lives outside the app source code and should be kept in sync with upstream releases.
+In case a new version is found upstream,
+the workflow opens a new issue suggesting updating the snap.
+
+The workflow is said 'generic' in that it expects two user provided bash scripts:
+
+- one script to retrieve the latest upstream version (see `script-get-upstream-version`).
+  It must print the version, and solely the version, to stdout.
+- one script to compare the version retrieved from the `snapcraft.yaml` to the version retrieved from the `script-get-upstream-version` script (see `script-compare-versions`).
+  The script is called with both versions as arguments : `compare-versions <upstream-version> <snap-version>`.
+  The script is expected to print on stdout the value `1` is case the upstream version is greater than the snap version. Any other value is ignored at the moment.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
+| `issue-assignee` | '' | Whom to assign the issue to. | false |
+| `script-compare-versions` | '' | A bash script to compare versions. | false |
+| `script-get-upstream-version` | '' | A bash script to retrieve the upstream version. | false |
+| `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
+
+### The upstream-gh-tag-monitor workflow
+
+The [upstream-gh-tag-monitor](.github/workflows/upstream-gh-tag-monitor.yaml) workflow is a specialization of the `generic-upstream-monitor` workflow.
+It provides a `script-get-upstream-version` script that retrieve the latest tag of a given upstream GitHub repository as well as the `script-compare-versions` script that compares two semver versions.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
+| `issue-assignee` | '' | Whom to assign the issue to. | false |
+| `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
+| `source-repo` | '' | The upstream repository to monitor in 'org/repo' form. | true |
