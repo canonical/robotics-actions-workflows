@@ -32,8 +32,7 @@ jobs:
       script-compare-versions: |
         wget https://raw.githubusercontent.com/Ariel-Rodriguez/sh-semversion-2/refs/tags/v1.0.5/semver2.sh -O semver2.sh
         chmod +x semver2.sh
-        RET=$(./semver2.sh "${1}" "${2}")
-        if [ "${RET}" == "1" ]; then exit 1; fi
+        ./semver2.sh "${1}" "${2}"
       script-get-upstream-version: |
         gh release --repo ${{ inputs.source-repo }} view --json tagName -q .tagName
       snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}

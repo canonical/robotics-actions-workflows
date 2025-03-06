@@ -107,16 +107,16 @@ jobs:
 
       - name: Compare versions
         id: compare
-        continue-on-error: true
         env:
           SNAP_VERSION: "${{ steps.parse.outputs.snap-version }}"
           UPSTREAM_VERSION: "${{ steps.get-upstream-version.outputs.upstream-version }}"
         run: |
           set -euxo pipefail
-          ./compare-versions "${UPSTREAM_VERSION}" "${SNAP_VERSION}"
+          NEW_RELEASE="$(./compare-versions ${UPSTREAM_VERSION} ${SNAP_VERSION})"
+          echo "new-release=${NEW_RELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Open issue
-        if: steps.compare.outcome != 'success'
+        if: steps.compare.outputs.new-release == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
