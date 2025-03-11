@@ -64,7 +64,7 @@ The reusable workflows proposed here generally consider (but are not restricted 
   At last, the user can explicitely set the risk.
   The snap version is expected to be updated appropriately with respect to the upstream code.
   Since keeping the snapcraft file, its git history and CI in sync with upstream can prove tedious,
-  it is recommended to to pin the source code version at a given tag (`parts.source-tag`),
+  it is recommended to pin the source code version at a given tag (`parts.source-tag`),
   and solely update the snap on new upstream tag.
 
 ### The snap workflow
