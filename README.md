@@ -53,7 +53,7 @@ The reusable workflows proposed here generally consider (but are not restricted 
   On pull request, the snap is built and tested.
   It can be retrieved as a workflow artifact for further local testing and tinkering.
   On pushes & manual trigger (`workflow_call`),
-  the snap is built, tested and also released on the Store on the `edge` risk channel.
+  the snap is built, tested and also released on the Snap Store on the `edge` risk channel.
   Only on tags is the snap released on `candidate`.
   Promotion from `candidate` to `stable` is manual and expected to happen after thorough testing.
 - The snapcraft file lives in its own repository.
