@@ -3,9 +3,19 @@ name: channel-risk-sync-monitor
 on:
   workflow_call:
     inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout.
+        required: false
+        type: string
       issue-assignee:
         default: ''
         description: The issue assignee in the form '@name'.
+        required: false
+        type: string
+      snap-name:
+        default: ""
+        description: The Snap name.
         required: false
         type: string
       snap-risk-aspirant:
@@ -44,7 +54,18 @@ jobs:
       - name: Install dependencies
         run: sudo snap install yq
 
+      - name: Check snap name input
+        if: "${{ inputs.snap-name != '' }}"
+        run: echo "snap-name=${{ inputs.snap-name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: "${{ inputs.snap-name == '' }}"
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.git-ref }}'
+
       - name: Find and parse snapcraft.yaml to retrieve the name
+        if: "${{ inputs.snap-name == '' }}"
         id: parse
         env:
           project_root: ${{ inputs.snapcraft-source-subdir }}
