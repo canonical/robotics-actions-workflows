@@ -25,7 +25,7 @@ on:
         type: string
       snapcraft-source-subdir:
         default: "."
-        description: The directory of the snapcraft project.
+        description: The directory of the Snapcraft project.
         required: false
         type: string
       threshold:
