@@ -51,9 +51,6 @@ jobs:
       issues: write
     steps:
 
-      - name: Install dependencies
-        run: sudo snap install yq
-
       - name: Check snap name input
         if: "${{ inputs.snap-name != '' }}"
         run: echo "snap-name=${{ inputs.snap-name }}" >> "$GITHUB_OUTPUT"
@@ -63,6 +60,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.git-ref }}'
+
+      - name: Install dependencies
+        if: "${{ inputs.snap-name == '' }}"
+        run: sudo snap install yq
 
       - name: Find and parse snapcraft.yaml to retrieve the name
         if: "${{ inputs.snap-name == '' }}"
