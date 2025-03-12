@@ -100,61 +100,62 @@ jobs:
 
           echo "snap-name=${name}" >> "$GITHUB_OUTPUT"
 
-      - name: Get the snap publication dates
-        id: dates
+      - name: Compare the snap revisions
+        id: revision
         env:
           SNAP_APIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
-          SNAP_NAME: "${{ steps.parse.outputs.snap-name }}"
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
         run: |
-          PUB_DATE="$(snap info ${SNAP_NAME} | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{print $2}')"
+          target_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_APIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+
+          if (( ${aspirant_rev} > ${target_rev} )); then
+            echo "The revision on channel '${SNAP_APIRANT_CHANNEL}'"\
+            "is newer than on channel '${SNAP_TARGET_CHANNEL}'"\
+            "(${aspirant_rev} > ${target_rev})."
+            echo "is-newer=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-newer=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get the revision publication date
+        if: steps.revision.outputs.is-newer == '1'
+        id: date
+        env:
+          SNAP_APIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+        run: |
+          PUB_DATE="$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_APIRANT_CHANNEL)]' | awk '{print $2}')"
 
           DATE_REGEX="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
 
           # @todo(artivis) handle '^' which means that the risk follows the one above
           if ! [[ ${PUB_DATE} =~ ${DATE_REGEX} ]]; then
-            echo "The date '${PUB_DATE}' on channel '${SNAP_TARGET_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
+            echo "The date '${PUB_DATE}' on channel '${SNAP_APIRANT_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
             exit 1
           fi
 
-          echo "Channel '${SNAP_TARGET_CHANNEL}' publish date: ${PUB_DATE}"
-
-          echo "snap-target-pub-date=${PUB_DATE}" >> "$GITHUB_OUTPUT"
-
-          PUB_DATE="$(snap info ${SNAP_NAME} | yq '.channels[env(SNAP_APIRANT_CHANNEL)]' | awk '{print $2}')"
-
-          if ! [[ ${PUB_DATE} =~ ${DATE_REGEX} ]]; then
-            echo "The date '${PUB_DATE}' on channel '${SNAP_TARGET_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
-            exit 1
-          fi
-
-          echo "Channel '${SNAP_APIRANT_CHANNEL}' publish date: ${PUB_DATE}"
+          echo "Channel '${SNAP_APIRANT_CHANNEL}' publication date: ${PUB_DATE}"
 
           echo "snap-aspirant-pub-date=${PUB_DATE}" >> "$GITHUB_OUTPUT"
 
-      - name: Compare publication dates
+      - name: Compare publication date to threshold
+        if: steps.revision.outputs.is-newer == '1'
         id: compare
-        env:
-          SNAP_APIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
-          SNAP_ASPIRANT_PUB_DATE: "${{ steps.dates.outputs.snap-aspirant-pub-date }}"
-          SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
-          SNAP_TARGET_PUB_DATE: "${{ steps.dates.outputs.snap-target-pub-date }}"
-          THRESHOLD: ${{ inputs.threshold }}
         run: |
 
           # Convert the dates to seconds since epoch
-          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${SNAP_ASPIRANT_PUB_DATE}" +%s)
-          SNAP_TARGET_PUB_DATE_SECONDS=$(date -d "${SNAP_TARGET_PUB_DATE}" +%s)
+          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${{ steps.date.outputs.snap-aspirant-pub-date }}" +%s)
+          TODAY_SECONDS=$(date +%s)
 
           # Calculate the difference in days
-          DIFF_SECS=$((SNAP_ASPIRANT_PUB_DATE_SECONDS - SNAP_TARGET_PUB_DATE_SECONDS))
+          DIFF_SECS=$((TODAY_SECONDS - SNAP_ASPIRANT_PUB_DATE_SECONDS))
           DIFF_DAYS=$((DIFF_SECS / 86400))
 
           # Compare the difference in days to the threshold
-          if (( ${DIFF_DAYS} >= ${THRESHOLD} )); then
-            echo "The channel '${SNAP_TARGET_CHANNEL}'"\
-            "is outdated compared to '${SNAP_APIRANT_CHANNEL}'"\
-            "(${DIFF_DAYS} >= ${THRESHOLD})."
+          if (( ${DIFF_DAYS} >= ${{ inputs.threshold }} )); then
+            echo "The revision published on '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}'"\
+            "is waiting for promotion"\
+            "(${DIFF_DAYS} > ${{ inputs.threshold }})."
             echo "is-outdated=1" >> "$GITHUB_OUTPUT"
           else
             echo "is-outdated=0" >> "$GITHUB_OUTPUT"
@@ -164,11 +165,10 @@ jobs:
         if: steps.compare.outputs.is-outdated == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SNAP_APIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
         run: |
           search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
-            --search '${SNAP_APIRANT_CHANNEL} in:title' --json number)"
+            --search '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }} in:title' --json number)"
 
           if [[ ! "${search_issue}" =~ "number" ]]; then
 
@@ -184,8 +184,8 @@ jobs:
             "- Target channel: '${SNAP_TARGET_CHANNEL}'\n" \
             "- Aspirant channel: '${SNAP_APIRANT_CHANNEL}'\n" \
             "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
-            "The channel '${SNAP_TARGET_CHANNEL}' is outdated compared to '${SNAP_APIRANT_CHANNEL}'.\n" \
-            "Please consider promoting the snap.\n\n" \
+            "The snap revision on channel '${SNAP_APIRANT_CHANNEL}' has been pending for more than ${{ inputs.threshold }} days'.\n" \
+            "Please consider promoting '${SNAP_APIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
             "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             | \
             gh issue --repo ${{ github.repository }} create \
