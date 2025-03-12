@@ -91,7 +91,7 @@ jobs:
 
           # @todo(artivis) handle '^' which means that the risk follows the one above
           if ! [[ ${PUB_DATE} =~ ${DATE_REGEX} ]]; then
-            "The date '${PUB_DATE}' on channel '${SNAP_TARGET_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
+            echo "The date '${PUB_DATE}' on channel '${SNAP_TARGET_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
             exit 1
           fi
 
@@ -102,7 +102,7 @@ jobs:
           PUB_DATE="$(snap info ${SNAP_NAME} | yq '.channels[env(SNAP_APIRANT_CHANNEL)]' | awk '{print $2}')"
 
           if ! [[ ${PUB_DATE} =~ ${DATE_REGEX} ]]; then
-            "The date '${PUB_DATE}' on channel '${SNAP_TARGET_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
+            echo "The date '${PUB_DATE}' on channel '${SNAP_TARGET_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
             exit 1
           fi
 

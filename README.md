@@ -271,4 +271,4 @@ If the publication date difference is greater or equal to a threshold, it opens 
 | `snap-risk-target` | 'stable' | The risk level target for the comparison. | false |
 | `snap-track` | 'latest' | The track to use for the comparison. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
-| `threshold` | '10' | The threshold to trigger the issue (in days) | false |
+| `threshold` | '10' | The threshold to trigger the issue (in days). | false |
