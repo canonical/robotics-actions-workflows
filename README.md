@@ -1,6 +1,6 @@
 # Robotics Actions Workflows
 
-This repository hosts a collection of [reusable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows) for building, testing & releasing robotics snaps.
+This repository hosts a collection of [reusable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows) for building, testing & releasing snaps.
 
 These workflows are intended to be re-used in github actions building snaps.
 They implement an opinionated workflow to build, test & release snaps.
@@ -45,6 +45,7 @@ The reusable workflows are:
 - [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
 - [generic-upstream-monitor.yaml](.github/workflows/generic-upstream-monitor.yaml) - the workflow to monitor new upstream versions.
 - [upstream-gh-tag-monitor.yaml](.github/workflows/upstream-gh-tag-monitor.yaml) - the workflow to monitor new tag on an upstream repository.
+- [channel-risk-sync-monitor.yaml](.github/workflows/channel-risk-sync-monitor.yaml) - the workflow to monitor the promotion from a channel risk to another.
 
 ### General notes
 
@@ -255,3 +256,19 @@ It provides a `script-get-upstream-version` script that retrieve the latest tag 
 | `issue-assignee` | '' | Whom to assign the issue to. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
 | `source-repo` | '' | The upstream repository to monitor in 'org/repo' form. | true |
+
+### The channel-risk-sync-monitor workflow
+
+The [channel-risk-sync-monitor](.github/workflows/channel-risk-sync-monitor.yaml) workflow compares the publications dates of a snap on two risk levels of a given track (e.g. `latest/candidate` vs `latest/stable`).
+If the publication date difference is greater or equal to a threshold, it opens an issue.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `issue-assignee` | '' | Whom to assign the issue to. | false |
+| `snap-risk-aspirant` | 'candidate' | The risk level to compare. | false |
+| `snap-risk-target` | 'stable' | The risk level target for the comparison. | false |
+| `snap-track` | 'latest' | The track to use for the comparison. | false |
+| `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
+| `threshold` | '10' | The threshold to trigger the issue (in days) | false |
