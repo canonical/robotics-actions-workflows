@@ -118,7 +118,7 @@ jobs:
             echo "is-newer=0" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Get the revision publication date
+      - name: Get the revision publication date on the aspirant snap track
         if: steps.revision.outputs.is-newer == '1'
         id: date
         env:
