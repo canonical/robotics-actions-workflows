@@ -260,7 +260,7 @@ It provides a `script-get-upstream-version` script that retrieve the latest tag 
 ### The channel-risk-sync-monitor workflow
 
 The [channel-risk-sync-monitor](.github/workflows/channel-risk-sync-monitor.yaml) workflow compares the publications dates of a snap on two risk levels of a given track (e.g. `latest/candidate` vs `latest/stable`).
-If the publication date difference is greater or equal to a threshold, it opens an issue.
+If the publication date difference is greater than or equal to a threshold, it opens an issue.
 
 #### Options
 
