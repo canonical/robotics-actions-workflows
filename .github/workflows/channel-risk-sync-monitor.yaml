@@ -122,19 +122,19 @@ jobs:
         if: steps.revision.outputs.is-newer == '1'
         id: date
         env:
-          SNAP_APIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
         run: |
-          PUB_DATE="$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_APIRANT_CHANNEL)]' | awk '{print $2}')"
+          PUB_DATE="$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{print $2}')"
 
           DATE_REGEX="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
 
           # @todo(artivis) handle '^' which means that the risk follows the one above
           if ! [[ ${PUB_DATE} =~ ${DATE_REGEX} ]]; then
-            echo "The date '${PUB_DATE}' on channel '${SNAP_APIRANT_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
+            echo "The date '${PUB_DATE}' on channel '${SNAP_ASPIRANT_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
             exit 1
           fi
 
-          echo "Channel '${SNAP_APIRANT_CHANNEL}' publication date: ${PUB_DATE}"
+          echo "Channel '${SNAP_ASPIRANT_CHANNEL}' publication date: ${PUB_DATE}"
 
           echo "snap-aspirant-pub-date=${PUB_DATE}" >> "$GITHUB_OUTPUT"
 
@@ -166,6 +166,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
         run: |
           search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
             --search '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }} in:title' --json number)"
@@ -182,14 +183,14 @@ jobs:
             echo -e "## Monitoring report\n\n" \
             "- Author: @${{ github.triggering_actor }}\n" \
             "- Target channel: '${SNAP_TARGET_CHANNEL}'\n" \
-            "- Aspirant channel: '${SNAP_APIRANT_CHANNEL}'\n" \
+            "- Aspirant channel: '${SNAP_ASPIRANT_CHANNEL}'\n" \
             "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
-            "The snap revision on channel '${SNAP_APIRANT_CHANNEL}' has been pending for more than ${{ inputs.threshold }} days'.\n" \
-            "Please consider promoting '${SNAP_APIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
+            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${{ inputs.threshold }} days'.\n" \
+            "Please consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
             "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             | \
             gh issue --repo ${{ github.repository }} create \
-              --title "[CI] Consider promoting '${SNAP_APIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'." \
+              --title "[CI] Consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'." \
               ${extra_args} \
               --body-file -
           else
