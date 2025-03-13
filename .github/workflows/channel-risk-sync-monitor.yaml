@@ -110,7 +110,7 @@ jobs:
           aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
 
           if (( ${aspirant_rev} > ${target_rev} )); then
-            echo "The revision on channel '${SNAP_APIRANT_CHANNEL}'"\
+            echo "The revision on channel '${SNAP_ASPIRANT_CHANNEL}'"\
             "is newer than on channel '${SNAP_TARGET_CHANNEL}'"\
             "(${aspirant_rev} > ${target_rev})."
             echo "is-newer=1" >> "$GITHUB_OUTPUT"
