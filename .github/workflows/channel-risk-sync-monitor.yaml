@@ -107,7 +107,7 @@ jobs:
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
         run: |
           target_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
-          aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_APIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
 
           if (( ${aspirant_rev} > ${target_rev} )); then
             echo "The revision on channel '${SNAP_APIRANT_CHANNEL}'"\
