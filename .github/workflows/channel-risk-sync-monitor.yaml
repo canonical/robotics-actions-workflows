@@ -138,7 +138,7 @@ jobs:
 
           echo "snap-aspirant-pub-date=${PUB_DATE}" >> "$GITHUB_OUTPUT"
 
-      - name: Compare publication date to threshold
+      - name: Compare aspirant publication date to threshold
         if: steps.revision.outputs.is-newer == '1'
         id: compare
         run: |
