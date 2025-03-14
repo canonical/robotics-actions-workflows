@@ -98,4 +98,4 @@ jobs:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapstore-login }}
         with:
           snap: ${{ matrix.snap }}
-          release: ${{ inputs.snap-track }}/${{ steps.set-snap-channel.outputs.snap-channel }}
+          release: ${{ steps.set-snap-channel.outputs.snap-channel }}
