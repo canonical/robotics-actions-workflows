@@ -1,0 +1,198 @@
+name: channel-risk-sync-monitor
+
+on:
+  workflow_call:
+    inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout.
+        required: false
+        type: string
+      issue-assignee:
+        default: ''
+        description: The issue assignee in the form '@name'.
+        required: false
+        type: string
+      snap-name:
+        default: ""
+        description: The snap name.
+        required: false
+        type: string
+      snap-risk-aspirant:
+        default: candidate
+        description: Snap Store channel risk used as aspirant.
+        required: false
+        type: string
+      snap-risk-target:
+        default: stable
+        description: Snap Store channel risk used as reference.
+        required: false
+        type: string
+      snap-track:
+        default: latest
+        description: Snap Store channel track to monitor.
+        required: false
+        type: string
+      snapcraft-source-subdir:
+        default: "."
+        description: The directory of the Snapcraft project.
+        required: false
+        type: string
+      threshold:
+        default: 10
+        description: The threshold to trigger the issue (in days).
+        required: false
+        type: number
+
+jobs:
+  compare:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      issues: write
+    steps:
+
+      - name: Check snap name input
+        if: "${{ inputs.snap-name != '' }}"
+        run: echo "snap-name=${{ inputs.snap-name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: "${{ inputs.snap-name == '' }}"
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Install dependencies
+        if: "${{ inputs.snap-name == '' }}"
+        run: sudo snap install yq
+
+      - name: Find and parse snapcraft.yaml to retrieve the name
+        if: "${{ inputs.snap-name == '' }}"
+        id: parse
+        env:
+          project_root: ${{ inputs.snapcraft-source-subdir }}
+        run: |
+          # If no project path is specified, default to top-level of repo
+          project_root="${project_root:-.}"
+
+          valid_paths=(
+            "${project_root}/.snapcraft.yaml"
+            "${project_root}/build-aux/snap/snapcraft.yaml"
+            "${project_root}/snap/snapcraft.yaml"
+            "${project_root}/snapcraft.yaml"
+          )
+
+          for file in "${valid_paths[@]}"; do
+            if [ -f "${file}" ]; then
+              yaml_path="${file}"
+            fi
+          done
+
+          if [ -z "${yaml_path}" ]; then
+            echo "No snapcraft.yaml found"
+            exit 1
+          fi
+
+          name="$(yq -r '.name' ${yaml_path})"
+
+          if [ -z "${name}" ]; then exit 1; fi
+
+          echo "Found snap name '${name}'."
+
+          echo "snap-name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Compare the snap revisions
+        id: revision
+        env:
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+          SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
+        run: |
+          target_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+
+          if (( ${aspirant_rev} > ${target_rev} )); then
+            echo "The revision on channel '${SNAP_ASPIRANT_CHANNEL}'"\
+            "is newer than on channel '${SNAP_TARGET_CHANNEL}'"\
+            "(${aspirant_rev} > ${target_rev})."
+            echo "is-newer=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-newer=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get the revision publication date on the aspirant snap track
+        if: steps.revision.outputs.is-newer == '1'
+        id: date
+        env:
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+        run: |
+          PUB_DATE="$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{print $2}')"
+
+          DATE_REGEX="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+
+          # @todo(artivis) handle '^' which means that the risk follows the one above
+          if ! [[ ${PUB_DATE} =~ ${DATE_REGEX} ]]; then
+            echo "The date '${PUB_DATE}' on channel '${SNAP_ASPIRANT_CHANNEL}' does not match the expect format 'YYYY-MM-DD'."
+            exit 1
+          fi
+
+          echo "Channel '${SNAP_ASPIRANT_CHANNEL}' publication date: ${PUB_DATE}"
+
+          echo "snap-aspirant-pub-date=${PUB_DATE}" >> "$GITHUB_OUTPUT"
+
+      - name: Compare aspirant publication date to threshold
+        if: steps.revision.outputs.is-newer == '1'
+        id: compare
+        run: |
+
+          # Convert the dates to seconds since epoch
+          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${{ steps.date.outputs.snap-aspirant-pub-date }}" +%s)
+          TODAY_SECONDS=$(date +%s)
+
+          # Calculate the difference in days
+          DIFF_SECS=$((TODAY_SECONDS - SNAP_ASPIRANT_PUB_DATE_SECONDS))
+          DIFF_DAYS=$((DIFF_SECS / 86400))
+
+          # Compare the difference in days to the threshold
+          if (( ${DIFF_DAYS} >= ${{ inputs.threshold }} )); then
+            echo "The revision published on '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}'"\
+            "is waiting for promotion"\
+            "(${DIFF_DAYS} > ${{ inputs.threshold }})."
+            echo "is-outdated=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-outdated=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open issue
+        if: steps.compare.outputs.is-outdated == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+        run: |
+          search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
+            --search '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }} in:title' --json number)"
+
+          if [[ ! "${search_issue}" =~ "number" ]]; then
+
+            echo "Creating a new issue."
+
+            extra_args=""
+            if [ ! -z "${{ inputs.issue-assignee }}" ]; then
+              extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
+            fi
+
+            echo -e "## Monitoring report\n\n" \
+            "- Author: @${{ github.triggering_actor }}\n" \
+            "- Target channel: '${SNAP_TARGET_CHANNEL}'\n" \
+            "- Aspirant channel: '${SNAP_ASPIRANT_CHANNEL}'\n" \
+            "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
+            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${{ inputs.threshold }} days'.\n" \
+            "Please consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
+            "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            | \
+            gh issue --repo ${{ github.repository }} create \
+              --title "[CI] Consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'." \
+              ${extra_args} \
+              --body-file -
+          else
+            echo "Issue already opened."
+          fi
