@@ -15,7 +15,7 @@ on:
         type: string
       snap-name:
         default: ""
-        description: The Snap name.
+        description: The snap name.
         required: false
         type: string
       snap-risk-aspirant:
@@ -82,12 +82,12 @@ jobs:
           )
 
           for file in "${valid_paths[@]}"; do
-            if [[ -f "$file" ]]; then
-              yaml_path="$file"
+            if [ -f "${file}" ]; then
+              yaml_path="${file}"
             fi
           done
 
-          if [[ -z "${yaml_path}" ]]; then
+          if [ -z "${yaml_path}" ]; then
             echo "No snapcraft.yaml found"
             exit 1
           fi
