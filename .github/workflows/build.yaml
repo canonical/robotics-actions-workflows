@@ -76,6 +76,7 @@ jobs:
         uses: canonical/action-build@v1
         id: build-snap
         env:
+          SNAPCRAFT_BUILD_INFO: 1
           SNAPCRAFT_ENABLE_EXPERIMENTAL_EXTENSIONS: '${{ inputs.snapcraft-enable-experimental-extensions }}'
         with:
           path: '${{ matrix.source-subdir }}'
