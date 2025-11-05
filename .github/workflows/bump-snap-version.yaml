@@ -1,0 +1,146 @@
+name: bump-snap-version
+
+on:
+  workflow_call:
+    inputs:
+      new-version:
+        description: The new version tag (e.g., 'v0.27.0').
+        required: true
+        type: string
+      issue-to-close:
+        description: The issue number that this PR will resolve (e.g., '108').
+        required: true
+        type: string
+      snapcraft-source-subdir:
+        default: '.'
+        description: The directory of the snapcraft project. Defaults to '.'.
+        required: false
+        type: string
+      pr-assignee:
+        default: ''
+        description: The PR assignee in the form '@name'. Defaults to no one.
+        required: false
+        type: string
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Defaults to the current git ref.
+        required: false
+        type: string
+
+jobs:
+  bump-version:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+
+      - name: Install dependencies
+        run: sudo snap install yq
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create new branch
+        env:
+          NEW_VERSION: ${{ inputs.new-version }}
+        run: |
+          # Create branch name from version
+          branch_name="feat/bump-${NEW_VERSION}"
+          git checkout -b "${branch_name}"
+          echo "branch-name=${branch_name}" >> "$GITHUB_ENV"
+
+      - name: Find and parse snapcraft.yaml
+        id: parse
+        env:
+          project_root: ${{ inputs.snapcraft-source-subdir }}
+        run: |
+          # If no project path is specified, default to top-level of repo
+          project_root="${project_root:-.}"
+
+          valid_paths=(
+            "${project_root}/.snapcraft.yaml"
+            "${project_root}/build-aux/snap/snapcraft.yaml"
+            "${project_root}/snap/snapcraft.yaml"
+            "${project_root}/snapcraft.yaml"
+          )
+
+          for file in "${valid_paths[@]}"; do
+            if [[ -f "$file" ]]; then
+              yaml_path="$file"
+            fi
+          done
+
+          if [[ -z "${yaml_path}" ]]; then
+            echo "No snapcraft.yaml found"
+            exit 1
+          fi
+
+          echo "yaml-path=${yaml_path}" >> "$GITHUB_OUTPUT"
+
+      - name: Update snapcraft.yaml
+        env:
+          YAML_PATH: ${{ steps.parse.outputs.yaml-path }}
+          NEW_VERSION: ${{ inputs.new-version }}
+        run: |
+          # Remove 'v' prefix from version for the version field
+          version_without_v="${NEW_VERSION#v}"
+
+          # Update the top-level version field
+          yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
+
+          # Check if adopt-info is used
+          if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
+            adopt_info_part="$(yq '.adopt-info' ${YAML_PATH})"
+
+            # Update source-tag for the part referenced by adopt-info
+            if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
+              yq -i ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+            fi
+          else
+            # If no adopt-info, try to find and update source-tag in all parts
+            # Get all parts that have source-tag
+            parts_with_source_tag=$(yq '.parts | to_entries | .[] | select(.value | has("source-tag")) | .key' "${YAML_PATH}")
+
+            if [ -n "${parts_with_source_tag}" ]; then
+              for part in ${parts_with_source_tag}; do
+                yq -i ".parts.${part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              done
+            fi
+          fi
+
+      - name: Commit changes
+        env:
+          NEW_VERSION: ${{ inputs.new-version }}
+        run: |
+          git add .
+          git commit -m "Bump version to ${NEW_VERSION}"
+
+      - name: Push branch
+        run: |
+          git push origin "${branch-name}"
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ inputs.new-version }}
+          ISSUE_NUMBER: ${{ inputs.issue-to-close }}
+          PR_ASSIGNEE: ${{ inputs.pr-assignee }}
+        run: |
+          extra_args=""
+          if [ ! -z "${PR_ASSIGNEE}" ]; then
+            extra_args="${extra_args} --assignee ${PR_ASSIGNEE}"
+          fi
+
+          gh pr create \
+            --title "Bump version to ${NEW_VERSION}" \
+            --body "Closes #${ISSUE_NUMBER}" \
+            --head "${branch-name}" \
+            ${extra_args}
