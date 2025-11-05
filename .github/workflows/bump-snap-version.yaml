@@ -75,6 +75,7 @@ jobs:
           for file in "${valid_paths[@]}"; do
             if [[ -f "$file" ]]; then
               yaml_path="$file"
+              break
             fi
           done
 
@@ -98,7 +99,7 @@ jobs:
 
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
-            adopt_info_part="$(yq '.adopt-info' ${YAML_PATH})"
+            adopt_info_part="$(yq '.adopt-info' \"${YAML_PATH}\")"
 
             # Update source-tag for the part referenced by adopt-info
             if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
@@ -135,7 +136,7 @@ jobs:
           PR_ASSIGNEE: ${{ inputs.pr-assignee }}
         run: |
           extra_args=""
-          if [ ! -z "${PR_ASSIGNEE}" ]; then
+          if [ -n "${PR_ASSIGNEE}" ]; then
             extra_args="${extra_args} --assignee ${PR_ASSIGNEE}"
           fi
 
