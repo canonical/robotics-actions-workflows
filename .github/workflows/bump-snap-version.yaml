@@ -23,6 +23,11 @@ on:
         description: The PR assignee in the form '@name'. Defaults to no one.
         required: false
         type: string
+      source-tag-part:
+        default: ''
+        description: The part name to update the source-tag for. Required when there are multiple parts with source-tag.
+        required: false
+        type: string
       git-ref:
         default: '${{ github.ref }}'
         description: The branch to checkout. Defaults to the current git ref.
@@ -75,8 +80,10 @@ jobs:
             --limit 10)
 
           if [ -z "${issues}" ] || [ "${issues}" = "[]" ]; then
-            echo "Error: No monitoring issues found"
-            exit 1
+            echo "No monitoring issues found. Workflow will exit successfully."
+            echo "version=" >> "$GITHUB_OUTPUT"
+            echo "issue-number=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           # Get the first (latest) issue
@@ -103,11 +110,13 @@ jobs:
           echo "issue-number=${issue_number}" >> "$GITHUB_OUTPUT"
 
       - name: Configure Git
+        if: steps.find-issue.outputs.version != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create new branch
+        if: steps.find-issue.outputs.version != ''
         env:
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}
         run: |
@@ -117,6 +126,7 @@ jobs:
           echo "branch-name=${branch_name}" >> "$GITHUB_ENV"
 
       - name: Find and parse snapcraft.yaml
+        if: steps.find-issue.outputs.version != ''
         id: parse
         env:
           project_root: ${{ inputs.snapcraft-source-subdir }}
@@ -146,37 +156,53 @@ jobs:
           echo "yaml-path=${yaml_path}" >> "$GITHUB_OUTPUT"
 
       - name: Update snapcraft.yaml
+        if: steps.find-issue.outputs.version != ''
         env:
           YAML_PATH: ${{ steps.parse.outputs.yaml-path }}
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}
+          SOURCE_TAG_PART: ${{ inputs.source-tag-part }}
         run: |
           # Remove 'v' prefix from version for the version field
           version_without_v="${NEW_VERSION#v}"
-
-          # Update the top-level version field
-          yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
 
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
             adopt_info_part="$(yq '.adopt-info' \"${YAML_PATH}\")"
 
+            # When adopt-info is used, only update source-tag, not the version field
             # Update source-tag for the part referenced by adopt-info
             if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
               yq -i ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
             fi
           else
-            # If no adopt-info, try to find and update source-tag in all parts
+            # Update the top-level version field (only when not using adopt-info)
+            yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
+
+            # If no adopt-info, try to find and update source-tag in parts
             # Get all parts that have source-tag
             parts_with_source_tag=$(yq '.parts | to_entries | .[] | select(.value | has("source-tag")) | .key' "${YAML_PATH}")
 
             if [ -n "${parts_with_source_tag}" ]; then
-              for part in ${parts_with_source_tag}; do
-                yq -i ".parts.${part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
-              done
+              # Count the number of parts with source-tag
+              part_count=$(echo "${parts_with_source_tag}" | wc -l)
+
+              if [ "${part_count}" -eq 1 ]; then
+                # Only one part with source-tag, update it
+                yq -i ".parts.${parts_with_source_tag}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              elif [ -n "${SOURCE_TAG_PART}" ]; then
+                # Multiple parts but user specified which one to update
+                yq -i ".parts.${SOURCE_TAG_PART}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              else
+                # Multiple parts and no user specification
+                echo "Error: Multiple parts with source-tag found: ${parts_with_source_tag}"
+                echo "Please specify which part to update using the 'source-tag-part' input"
+                exit 1
+              fi
             fi
           fi
 
       - name: Commit changes
+        if: steps.find-issue.outputs.version != ''
         env:
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}
         run: |
@@ -184,10 +210,12 @@ jobs:
           git commit -m "Bump version to ${NEW_VERSION}"
 
       - name: Push branch
+        if: steps.find-issue.outputs.version != ''
         run: |
           git push origin "${branch-name}"
 
       - name: Create Pull Request
+        if: steps.find-issue.outputs.version != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}

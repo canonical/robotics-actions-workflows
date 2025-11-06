@@ -270,15 +270,17 @@ The workflow can operate in two modes:
 - **Manual mode**: When `new-version` and `issue-to-close` are both provided, the workflow uses those values directly.
 
 The workflow:
-1. Finds the latest monitoring issue and extracts the version (if inputs not provided).
+1. Finds the latest monitoring issue and extracts the version (if inputs not provided). If no monitoring issue is found, the workflow exits successfully without making changes.
 2. Checks out the repository's default branch.
 3. Creates a new branch based on the `new-version` (e.g., `feat/bump-v0.27.0`).
 4. Finds the `snapcraft.yaml` file in the specified directory.
-5. Updates the top-level `version` field (removing the 'v' prefix if present).
-6. Updates the `source-tag` field for the relevant part (preserving the 'v' prefix).
-7. Commits the changes with a descriptive message.
-8. Pushes the new branch to the repository.
-9. Opens a new Pull Request that closes the specified issue.
+5. Updates the appropriate fields:
+   - If `adopt-info` is used: only updates the `source-tag` field for the referenced part.
+   - If `adopt-info` is not used: updates the top-level `version` field (removing the 'v' prefix) and the `source-tag` field for parts.
+   - If multiple parts have `source-tag`, either updates the single part or requires the `source-tag-part` input to specify which part to update.
+6. Commits the changes with a descriptive message.
+7. Pushes the new branch to the repository.
+8. Opens a new Pull Request that closes the specified issue.
 
 #### Options
 
@@ -288,6 +290,7 @@ The workflow:
 | `issue-to-close` | '' | The issue number that this PR will resolve (e.g., '108'). If not provided, will automatically find the latest monitoring issue. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
 | `pr-assignee` | '' | The PR assignee in the form '@name'. | false |
+| `source-tag-part` | '' | The part name to update the source-tag for. Required when there are multiple parts with source-tag. | false |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 
 ### The channel-risk-sync-monitor workflow
