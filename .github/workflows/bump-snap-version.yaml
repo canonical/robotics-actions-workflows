@@ -173,25 +173,40 @@ jobs:
             # Update source-tag for the part referenced by adopt-info
             if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
               yq -i ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+            else
+              echo "Error: Part '${adopt_info_part}' referenced by adopt-info does not have a source-tag"
+              exit 1
             fi
           else
             # Update the top-level version field (only when not using adopt-info)
             yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
 
-            # If no adopt-info, try to find and update source-tag in parts
-            # Get all parts that have source-tag
-            parts_with_source_tag=$(yq '.parts | to_entries | .[] | select(.value | has("source-tag")) | .key' "${YAML_PATH}")
+            # If user specified a part, update that part directly
+            if [ -n "${SOURCE_TAG_PART}" ]; then
+              # User specified which part to update
+              if yq ".parts.${SOURCE_TAG_PART} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
+                yq -i ".parts.${SOURCE_TAG_PART}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              else
+                echo "Error: Specified part '${SOURCE_TAG_PART}' does not have a source-tag"
+                exit 1
+              fi
+            else
+              # No user specification, try to find and update source-tag in parts
+              # Get all parts that have source-tag
+              parts_with_source_tag=$(yq '.parts | to_entries | .[] | select(.value | has("source-tag")) | .key' "${YAML_PATH}")
 
-            if [ -n "${parts_with_source_tag}" ]; then
+              if [ -z "${parts_with_source_tag}" ]; then
+                echo "Error: No parts with source-tag found in snapcraft.yaml"
+                echo "Please add source-tag to a part or specify the part using 'source-tag-part' input"
+                exit 1
+              fi
+
               # Count the number of parts with source-tag
               part_count=$(echo "${parts_with_source_tag}" | wc -l)
 
               if [ "${part_count}" -eq 1 ]; then
                 # Only one part with source-tag, update it
                 yq -i ".parts.${parts_with_source_tag}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
-              elif [ -n "${SOURCE_TAG_PART}" ]; then
-                # Multiple parts but user specified which one to update
-                yq -i ".parts.${SOURCE_TAG_PART}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
               else
                 # Multiple parts and no user specification
                 echo "Error: Multiple parts with source-tag found: ${parts_with_source_tag}"
