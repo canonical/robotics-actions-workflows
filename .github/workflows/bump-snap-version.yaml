@@ -4,12 +4,14 @@ on:
   workflow_call:
     inputs:
       new-version:
-        description: The new version tag (e.g., 'v0.27.0').
-        required: true
+        default: ''
+        description: The new version tag (e.g., 'v0.27.0'). If not provided, will automatically find the latest monitoring issue.
+        required: false
         type: string
       issue-to-close:
-        description: The issue number that this PR will resolve (e.g., '108').
-        required: true
+        default: ''
+        description: The issue number that this PR will resolve (e.g., '108'). If not provided, will automatically find the latest monitoring issue.
+        required: false
         type: string
       snapcraft-source-subdir:
         default: '.'
@@ -33,6 +35,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: read
     steps:
 
       - name: Install dependencies
@@ -43,6 +46,55 @@ jobs:
         with:
           ref: '${{ inputs.git-ref }}'
 
+      - name: Find latest monitoring issue
+        id: find-issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.new-version }}
+          INPUT_ISSUE: ${{ inputs.issue-to-close }}
+        run: |
+          # If both version and issue are provided, use them
+          if [ -n "${INPUT_VERSION}" ] && [ -n "${INPUT_ISSUE}" ]; then
+            echo "Using provided version and issue number"
+            echo "version=${INPUT_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "issue-number=${INPUT_ISSUE}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Find the latest open monitoring issue
+          echo "Searching for latest monitoring issue..."
+          issues=$(gh issue --repo ${{ github.repository }} list --state open \
+            --search '[CI] Found version in:title' --json number,title \
+            --limit 10)
+
+          if [ -z "${issues}" ] || [ "${issues}" = "[]" ]; then
+            echo "Error: No monitoring issues found"
+            exit 1
+          fi
+
+          # Get the first (latest) issue
+          issue_number=$(echo "${issues}" | jq -r '.[0].number')
+          issue_title=$(echo "${issues}" | jq -r '.[0].title')
+
+          if [ -z "${issue_number}" ] || [ "${issue_number}" = "null" ]; then
+            echo "Error: Could not parse issue number"
+            exit 1
+          fi
+
+          echo "Found issue #${issue_number}: ${issue_title}"
+
+          # Extract version from title, e.g., "[CI] Found version 'v0.27.0' upstream"
+          version=$(echo "${issue_title}" | sed -n "s/.*Found version '\([^']*\)'.*/\1/p")
+
+          if [ -z "${version}" ]; then
+            echo "Error: Could not extract version from issue title: ${issue_title}"
+            exit 1
+          fi
+
+          echo "Extracted version: ${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "issue-number=${issue_number}" >> "$GITHUB_OUTPUT"
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -50,7 +102,7 @@ jobs:
 
       - name: Create new branch
         env:
-          NEW_VERSION: ${{ inputs.new-version }}
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
         run: |
           # Create branch name from version
           branch_name="feat/bump-${NEW_VERSION}"
@@ -89,7 +141,7 @@ jobs:
       - name: Update snapcraft.yaml
         env:
           YAML_PATH: ${{ steps.parse.outputs.yaml-path }}
-          NEW_VERSION: ${{ inputs.new-version }}
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
         run: |
           # Remove 'v' prefix from version for the version field
           version_without_v="${NEW_VERSION#v}"
@@ -119,7 +171,7 @@ jobs:
 
       - name: Commit changes
         env:
-          NEW_VERSION: ${{ inputs.new-version }}
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
         run: |
           git add .
           git commit -m "Bump version to ${NEW_VERSION}"
@@ -131,8 +183,8 @@ jobs:
       - name: Create Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_VERSION: ${{ inputs.new-version }}
-          ISSUE_NUMBER: ${{ inputs.issue-to-close }}
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
+          ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
           PR_ASSIGNEE: ${{ inputs.pr-assignee }}
         run: |
           extra_args=""
