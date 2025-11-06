@@ -39,7 +39,9 @@ jobs:
     steps:
 
       - name: Install dependencies
-        run: sudo snap install yq
+        run: |
+          sudo snap install yq
+          sudo apt-get update && sudo apt-get install -y jq
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,12 +55,17 @@ jobs:
           INPUT_VERSION: ${{ inputs.new-version }}
           INPUT_ISSUE: ${{ inputs.issue-to-close }}
         run: |
-          # If both version and issue are provided, use them
-          if [ -n "${INPUT_VERSION}" ] && [ -n "${INPUT_ISSUE}" ]; then
-            echo "Using provided version and issue number"
-            echo "version=${INPUT_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "issue-number=${INPUT_ISSUE}" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Check if inputs are partially provided
+          if [ -n "${INPUT_VERSION}" ] || [ -n "${INPUT_ISSUE}" ]; then
+            if [ -n "${INPUT_VERSION}" ] && [ -n "${INPUT_ISSUE}" ]; then
+              echo "Using provided version and issue number"
+              echo "version=${INPUT_VERSION}" >> "$GITHUB_OUTPUT"
+              echo "issue-number=${INPUT_ISSUE}" >> "$GITHUB_OUTPUT"
+              exit 0
+            else
+              echo "Error: Both 'new-version' and 'issue-to-close' must be provided together, or neither for automatic mode"
+              exit 1
+            fi
           fi
 
           # Find the latest open monitoring issue
