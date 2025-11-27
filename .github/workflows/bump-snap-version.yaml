@@ -49,14 +49,14 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq
 
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6
         with:
           ref: '${{ inputs.git-ref }}'
 
       - name: Find latest monitoring issue
         id: find-issue
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_VERSION: ${{ inputs.new-version }}
           INPUT_ISSUE: ${{ inputs.issue-to-close }}
         run: |
@@ -232,7 +232,7 @@ jobs:
       - name: Create Pull Request
         if: steps.find-issue.outputs.version != ''
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
           PR_ASSIGNEE: ${{ inputs.pr-assignee }}
