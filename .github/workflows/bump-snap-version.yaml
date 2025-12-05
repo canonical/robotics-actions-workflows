@@ -166,21 +166,25 @@ jobs:
           version_without_v="${NEW_VERSION#v}"
 
           ls -la
+          ls -la snap || true
           head "${YAML_PATH}" || true
 
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
+            echo "Adopting info"
             adopt_info_part="$(yq '.adopt-info' \"${YAML_PATH}\")"
 
             # When adopt-info is used, only update source-tag, not the version field
             # Update source-tag for the part referenced by adopt-info
             if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
+              echo "Updating soure-tag"
               yq -i ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
             else
               echo "Error: Part '${adopt_info_part}' referenced by adopt-info does not have a source-tag"
               exit 1
             fi
           else
+            echo "Updating the top-level version"
             # Update the top-level version field (only when not using adopt-info)
             yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
 
