@@ -111,7 +111,7 @@ jobs:
 
       - name: Check for existing PR
         id: check-existing-pr
-        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        if: steps.find-issue.outputs.version != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
