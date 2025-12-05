@@ -119,9 +119,8 @@ jobs:
           # Check if a PR already exists that closes this issue
           echo "Checking for existing PRs that close issue #${ISSUE_NUMBER}..."
           # Search for PRs using all GitHub closing keywords: close(s/d), fix(es/ed), resolve(s/d)
-          # Restrict search to current repository only
           existing_prs=$(gh pr list --repo ${{ github.repository }} --state open \
-            --search "repo:${{ github.repository }} (close #${ISSUE_NUMBER} OR closes #${ISSUE_NUMBER} OR closed #${ISSUE_NUMBER} OR fix #${ISSUE_NUMBER} OR fixes #${ISSUE_NUMBER} OR fixed #${ISSUE_NUMBER} OR resolve #${ISSUE_NUMBER} OR resolves #${ISSUE_NUMBER} OR resolved #${ISSUE_NUMBER}) in:body" \
+            --search "(close #${ISSUE_NUMBER} OR closes #${ISSUE_NUMBER} OR closed #${ISSUE_NUMBER} OR fix #${ISSUE_NUMBER} OR fixes #${ISSUE_NUMBER} OR fixed #${ISSUE_NUMBER} OR resolve #${ISSUE_NUMBER} OR resolves #${ISSUE_NUMBER} OR resolved #${ISSUE_NUMBER}) in:body" \
             --json number,state,title)
 
           if [ -n "${existing_prs}" ] && [ "${existing_prs}" != "[]" ]; then
