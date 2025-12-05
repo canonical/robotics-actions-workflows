@@ -116,6 +116,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create new branch
+        id: create-branch
         if: steps.find-issue.outputs.version != ''
         env:
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}
@@ -123,7 +124,7 @@ jobs:
           # Create branch name from version
           branch_name="feat/bump-${NEW_VERSION}"
           git checkout -b "${branch_name}"
-          echo "branch-name=${branch_name}" >> "$GITHUB_ENV"
+          echo "branch-name=${branch_name}" >> "$GITHUB_OUTPUT"
 
       - name: Find and parse snapcraft.yaml
         if: steps.find-issue.outputs.version != ''
@@ -233,11 +234,13 @@ jobs:
 
       - name: Push branch
         if: steps.find-issue.outputs.version != ''
+        env:
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
         run: |
           git branch
           git show-ref
-          echo "${branch-name}"
-          git push origin "${branch-name}"
+          echo "${BRANCH_NAME}"
+          git push origin "${BRANCH_NAME}"
 
       - name: Create Pull Request
         if: steps.find-issue.outputs.version != ''
@@ -246,6 +249,7 @@ jobs:
           NEW_VERSION: ${{ steps.find-issue.outputs.version }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
           PR_ASSIGNEE: ${{ inputs.pr-assignee }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
         run: |
           extra_args=""
           if [ -n "${PR_ASSIGNEE}" ]; then
@@ -255,5 +259,5 @@ jobs:
           gh pr create \
             --title "Bump version to ${NEW_VERSION}" \
             --body "Closes #${ISSUE_NUMBER}" \
-            --head "${branch-name}" \
+            --head "${BRANCH_NAME}" \
             ${extra_args}
