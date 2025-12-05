@@ -44,6 +44,7 @@ The reusable workflows are:
 - [promote.yaml](.github/workflows/promote.yaml) - the workflow to promote the snap on the store.
 - [generic-upstream-monitor.yaml](.github/workflows/generic-upstream-monitor.yaml) - the workflow to monitor new upstream versions.
 - [upstream-gh-tag-monitor.yaml](.github/workflows/upstream-gh-tag-monitor.yaml) - the workflow to monitor new tag on an upstream repository.
+- [bump-snap-version.yaml](.github/workflows/bump-snap-version.yaml) - the workflow to automate snap version bump PRs.
 - [channel-risk-sync-monitor.yaml](.github/workflows/channel-risk-sync-monitor.yaml) - the workflow to monitor the promotion from a channel risk to another.
 
 ### General notes
@@ -244,6 +245,41 @@ It provides a `script-get-upstream-version` script that retrieve the latest tag 
 | `issue-assignee` | '' | Whom to assign the issue to. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
 | `source-repo` | '' | The upstream repository to monitor in 'org/repo' form. | true |
+
+### The bump-snap-version workflow
+
+The [bump-snap-version](.github/workflows/bump-snap-version.yaml) workflow automates the creation of a version bump PR.
+This workflow is designed to work in conjunction with the `upstream-gh-tag-monitor` workflow.
+When a new version is detected upstream and an issue is opened,
+this workflow can be triggered to automatically create a PR that updates the `snapcraft.yaml` file with the new version.
+
+The workflow can operate in two modes:
+- **Automatic mode** (recommended): When called without `new-version` and `issue-to-close` inputs, the workflow automatically finds the latest open monitoring issue (e.g., "[CI] Found version 'v0.27.0' upstream"), extracts the version from it, and proceeds with the bump.
+- **Manual mode**: When `new-version` and `issue-to-close` are both provided, the workflow uses those values directly.
+
+The workflow:
+1. Finds the latest monitoring issue and extracts the version (if inputs not provided). If no monitoring issue is found, the workflow exits successfully without making changes.
+2. Checks out the repository's default branch.
+3. Creates a new branch based on the `new-version` (e.g., `feat/bump-v0.27.0`).
+4. Finds the `snapcraft.yaml` file in the specified directory.
+5. Updates the appropriate fields:
+   - If `adopt-info` is used: only updates the `source-tag` field for the referenced part.
+   - If `adopt-info` is not used: updates the top-level `version` field (removing the 'v' prefix) and the `source-tag` field for parts.
+   - If multiple parts have `source-tag`, either updates the single part or requires the `source-tag-part` input to specify which part to update.
+6. Commits the changes with a descriptive message.
+7. Pushes the new branch to the repository.
+8. Opens a new Pull Request that closes the specified issue.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `new-version` | '' | The new version tag (e.g., 'v0.27.0'). If not provided, will automatically find the latest monitoring issue. | false |
+| `issue-to-close` | '' | The issue number that this PR will resolve (e.g., '108'). If not provided, will automatically find the latest monitoring issue. | false |
+| `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
+| `pr-reviewer` | '' | The PR reviewer in the form '@name'. | false |
+| `source-tag-part` | '' | The part name to update the source-tag for. Required when there are multiple parts with source-tag. | false |
+| `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 
 ### The channel-risk-sync-monitor workflow
 
