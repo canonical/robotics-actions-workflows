@@ -205,7 +205,7 @@ jobs:
             # When adopt-info is used, only update source-tag, not the version field
             # Update source-tag for the part referenced by adopt-info
             if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
-              echo "Updating soure-tag"
+              echo "Updating source-tag"
               yq -i --output-format=yaml ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
             else
               echo "Error: Part '${adopt_info_part}' referenced by adopt-info does not have a source-tag"
