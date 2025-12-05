@@ -208,7 +208,10 @@ jobs:
             # Update source-tag for the part referenced by adopt-info
             if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
               echo "Updating source-tag"
-              yq -i --output-format=yaml ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              # Preserve blank lines using sed markers
+              sed -e 's/^[[:blank:]]*$/# __NEWLINE__#/' -i "${YAML_PATH}"
+              yq -i ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              sed -e 's/.*# __NEWLINE__#.*//' -i "${YAML_PATH}"
             else
               echo "Error: Part '${adopt_info_part}' referenced by adopt-info does not have a source-tag"
               exit 1
@@ -216,13 +219,19 @@ jobs:
           else
             echo "Updating the top-level version"
             # Update the top-level version field (only when not using adopt-info)
-            yq -i --output-format=yaml ".version = \"${version_without_v}\"" "${YAML_PATH}"
+            # Preserve blank lines using sed markers
+            sed -e 's/^[[:blank:]]*$/# __NEWLINE__#/' -i "${YAML_PATH}"
+            yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
+            sed -e 's/.*# __NEWLINE__#.*//' -i "${YAML_PATH}"
 
             # If user specified a part, update that part directly
             if [ -n "${SOURCE_TAG_PART}" ]; then
               # User specified which part to update
               if yq ".parts.${SOURCE_TAG_PART} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
-                yq -i --output-format=yaml ".parts.${SOURCE_TAG_PART}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+                # Preserve blank lines using sed markers
+                sed -e 's/^[[:blank:]]*$/# __NEWLINE__#/' -i "${YAML_PATH}"
+                yq -i ".parts.${SOURCE_TAG_PART}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+                sed -e 's/.*# __NEWLINE__#.*//' -i "${YAML_PATH}"
               else
                 echo "Error: Specified part '${SOURCE_TAG_PART}' does not have a source-tag"
                 exit 1
@@ -243,7 +252,10 @@ jobs:
 
               if [ "${part_count}" -eq 1 ]; then
                 # Only one part with source-tag, update it
-                yq -i --output-format=yaml ".parts.${parts_with_source_tag}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+                # Preserve blank lines using sed markers
+                sed -e 's/^[[:blank:]]*$/# __NEWLINE__#/' -i "${YAML_PATH}"
+                yq -i ".parts.${parts_with_source_tag}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+                sed -e 's/.*# __NEWLINE__#.*//' -i "${YAML_PATH}"
               else
                 # Multiple parts and no user specification
                 echo "Error: Multiple parts with source-tag found: ${parts_with_source_tag}"
