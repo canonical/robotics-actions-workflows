@@ -234,6 +234,9 @@ jobs:
       - name: Push branch
         if: steps.find-issue.outputs.version != ''
         run: |
+          git branch
+          git show-ref
+          echo "${branch-name}"
           git push origin "${branch-name}"
 
       - name: Create Pull Request
