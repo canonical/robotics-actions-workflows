@@ -253,7 +253,7 @@ jobs:
         run: |
           extra_args=""
           if [ -n "${PR_ASSIGNEE}" ]; then
-            extra_args="${extra_args} --assignee ${PR_ASSIGNEE}"
+            extra_args="${extra_args} --reviewer ${PR_ASSIGNEE}"
           fi
 
           gh pr create \
