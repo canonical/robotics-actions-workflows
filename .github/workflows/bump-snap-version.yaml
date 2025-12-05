@@ -172,7 +172,7 @@ jobs:
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
             echo "Adopting info"
-            adopt_info_part="$(yq '.adopt-info' \"${YAML_PATH}\")"
+            adopt_info_part="$(yq '.adopt-info' ${YAML_PATH})"
 
             # When adopt-info is used, only update source-tag, not the version field
             # Update source-tag for the part referenced by adopt-info
