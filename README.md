@@ -289,7 +289,7 @@ The workflow:
 | `new-version` | '' | The new version tag (e.g., 'v0.27.0'). If not provided, will automatically find the latest monitoring issue. | false |
 | `issue-to-close` | '' | The issue number that this PR will resolve (e.g., '108'). If not provided, will automatically find the latest monitoring issue. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
-| `pr-assignee` | '' | The PR assignee in the form '@name'. | false |
+| `pr-reviewer` | '' | The PR reviewer in the form '@name'. | false |
 | `source-tag-part` | '' | The part name to update the source-tag for. Required when there are multiple parts with source-tag. | false |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 
