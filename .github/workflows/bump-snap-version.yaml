@@ -118,7 +118,7 @@ jobs:
         run: |
           # Check if a PR already exists that closes this issue
           echo "Checking for existing PRs that close issue #${ISSUE_NUMBER}..."
-          existing_prs=$(gh pr list --repo ${{ github.repository }} --state all \
+          existing_prs=$(gh pr list --repo ${{ github.repository }} --state open \
             --search "Closes #${ISSUE_NUMBER} in:body" --json number,state,title)
 
           if [ -n "${existing_prs}" ] && [ "${existing_prs}" != "[]" ]; then
