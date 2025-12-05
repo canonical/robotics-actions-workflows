@@ -165,6 +165,9 @@ jobs:
           # Remove 'v' prefix from version for the version field
           version_without_v="${NEW_VERSION#v}"
 
+          ls -la
+          head "${YAML_PATH}" || true
+
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
             adopt_info_part="$(yq '.adopt-info' \"${YAML_PATH}\")"
