@@ -1,0 +1,292 @@
+name: bump-snap-version
+
+on:
+  workflow_call:
+    inputs:
+      new-version:
+        default: ''
+        description: The new version tag (e.g., 'v0.27.0'). If not provided, will automatically find the latest monitoring issue.
+        required: false
+        type: string
+      issue-to-close:
+        default: ''
+        description: The issue number that this PR will resolve (e.g., '108'). If not provided, will automatically find the latest monitoring issue.
+        required: false
+        type: string
+      snapcraft-source-subdir:
+        default: '.'
+        description: The directory of the snapcraft project. Defaults to '.'.
+        required: false
+        type: string
+      pr-reviewer:
+        default: ''
+        description: The PR reviewer in the form '@name'. Defaults to no one.
+        required: false
+        type: string
+      source-tag-part:
+        default: ''
+        description: The part name to update the source-tag for. Required when there are multiple parts with source-tag.
+        required: false
+        type: string
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Defaults to the current git ref.
+        required: false
+        type: string
+
+jobs:
+  bump-version:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    steps:
+
+      - name: Install dependencies
+        run: |
+          sudo snap install yq
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Find latest monitoring issue
+        id: find-issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.new-version }}
+          INPUT_ISSUE: ${{ inputs.issue-to-close }}
+        run: |
+          # Check if inputs are partially provided
+          if [ -n "${INPUT_VERSION}" ] || [ -n "${INPUT_ISSUE}" ]; then
+            if [ -n "${INPUT_VERSION}" ] && [ -n "${INPUT_ISSUE}" ]; then
+              echo "Using provided version and issue number"
+              echo "version=${INPUT_VERSION}" >> "$GITHUB_OUTPUT"
+              echo "issue-number=${INPUT_ISSUE}" >> "$GITHUB_OUTPUT"
+              exit 0
+            else
+              echo "Error: Both 'new-version' and 'issue-to-close' must be provided together, or neither for automatic mode"
+              exit 1
+            fi
+          fi
+
+          # Find the latest open monitoring issue
+          echo "Searching for latest monitoring issue..."
+          issues=$(gh issue --repo ${{ github.repository }} list --state open \
+            --search '[CI] Found version in:title' --json number,title \
+            --limit 10)
+
+          if [ -z "${issues}" ] || [ "${issues}" = "[]" ]; then
+            echo "No monitoring issues found. Workflow will exit successfully."
+            echo "version=" >> "$GITHUB_OUTPUT"
+            echo "issue-number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Get the first (latest) issue
+          issue_number=$(echo "${issues}" | jq -r '.[0].number')
+          issue_title=$(echo "${issues}" | jq -r '.[0].title')
+
+          if [ -z "${issue_number}" ] || [ "${issue_number}" = "null" ]; then
+            echo "Error: Could not parse issue number"
+            exit 1
+          fi
+
+          echo "Found issue #${issue_number}: ${issue_title}"
+
+          # Extract version from title, e.g., "[CI] Found version 'v0.27.0' upstream"
+          version=$(echo "${issue_title}" | sed -n "s/.*Found version '\([^']*\)'.*/\1/p")
+
+          if [ -z "${version}" ]; then
+            echo "Error: Could not extract version from issue title: ${issue_title}"
+            exit 1
+          fi
+
+          echo "Extracted version: ${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "issue-number=${issue_number}" >> "$GITHUB_OUTPUT"
+
+      - name: Check for existing PR
+        id: check-existing-pr
+        if: steps.find-issue.outputs.version != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+        run: |
+          # Check if a PR already exists that closes this issue
+          echo "Checking for existing PRs that close issue #${ISSUE_NUMBER}..."
+          # Search for PRs using all GitHub closing keywords: close(s/d), fix(es/ed), resolve(s/d)
+          existing_prs=$(gh pr list --repo ${{ github.repository }} --state open \
+            --search "(close #${ISSUE_NUMBER} OR closes #${ISSUE_NUMBER} OR closed #${ISSUE_NUMBER} OR fix #${ISSUE_NUMBER} OR fixes #${ISSUE_NUMBER} OR fixed #${ISSUE_NUMBER} OR resolve #${ISSUE_NUMBER} OR resolves #${ISSUE_NUMBER} OR resolved #${ISSUE_NUMBER}) in:body" \
+            --json number,state,title)
+
+          if [ -n "${existing_prs}" ] && [ "${existing_prs}" != "[]" ]; then
+            pr_count=$(echo "${existing_prs}" | jq '. | length')
+            if [ "${pr_count}" -gt 0 ]; then
+              echo "Found ${pr_count} existing PR(s) for issue #${ISSUE_NUMBER}:"
+              echo "${existing_prs}" | jq -r '.[] | "  PR #\(.number) (\(.state)): \(.title)"'
+              echo ""
+              echo "A PR already exists to close issue #${ISSUE_NUMBER}. Skipping PR creation."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          echo "No existing PR found. Proceeding with PR creation."
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Git
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create new branch
+        id: create-branch
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        env:
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
+        run: |
+          # Create branch name from version
+          branch_name="feat/bump-${NEW_VERSION}"
+          git checkout -b "${branch_name}"
+          echo "branch-name=${branch_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Find and parse snapcraft.yaml
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        id: parse
+        env:
+          project_root: ${{ inputs.snapcraft-source-subdir }}
+        run: |
+          # If no project path is specified, default to top-level of repo
+          project_root="${project_root:-.}"
+
+          valid_paths=(
+            "${project_root}/.snapcraft.yaml"
+            "${project_root}/build-aux/snap/snapcraft.yaml"
+            "${project_root}/snap/snapcraft.yaml"
+            "${project_root}/snapcraft.yaml"
+          )
+
+          for file in "${valid_paths[@]}"; do
+            if [[ -f "$file" ]]; then
+              yaml_path="$file"
+              break
+            fi
+          done
+
+          if [[ -z "${yaml_path}" ]]; then
+            echo "No snapcraft.yaml found"
+            exit 1
+          fi
+
+          echo "yaml-path=${yaml_path}" >> "$GITHUB_OUTPUT"
+
+      - name: Update snapcraft.yaml
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        env:
+          YAML_PATH: ${{ steps.parse.outputs.yaml-path }}
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
+          SOURCE_TAG_PART: ${{ inputs.source-tag-part }}
+        run: |
+          # Remove 'v' prefix from version for the version field
+          version_without_v="${NEW_VERSION#v}"
+
+          ls -la
+          ls -la snap || true
+          head "${YAML_PATH}" || true
+
+          # Check if adopt-info is used
+          if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
+            echo "Adopting info"
+            adopt_info_part="$(yq '.adopt-info' ${YAML_PATH})"
+
+            # When adopt-info is used, only update source-tag, not the version field
+            # Update source-tag for the part referenced by adopt-info
+            if yq ".parts.${adopt_info_part} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
+              echo "Updating source-tag"
+              yq -i ".parts.${adopt_info_part}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+            else
+              echo "Error: Part '${adopt_info_part}' referenced by adopt-info does not have a source-tag"
+              exit 1
+            fi
+          else
+            echo "Updating the top-level version"
+            # Update the top-level version field (only when not using adopt-info)
+            yq -i ".version = \"${version_without_v}\"" "${YAML_PATH}"
+
+            # If user specified a part, update that part directly
+            if [ -n "${SOURCE_TAG_PART}" ]; then
+              # User specified which part to update
+              if yq ".parts.${SOURCE_TAG_PART} | has(\"source-tag\")" "${YAML_PATH}" | grep -q "true"; then
+                yq -i ".parts.${SOURCE_TAG_PART}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              else
+                echo "Error: Specified part '${SOURCE_TAG_PART}' does not have a source-tag"
+                exit 1
+              fi
+            else
+              # No user specification, try to find and update source-tag in parts
+              # Get all parts that have source-tag
+              parts_with_source_tag=$(yq '.parts | to_entries | .[] | select(.value | has("source-tag")) | .key' "${YAML_PATH}")
+
+              if [ -z "${parts_with_source_tag}" ]; then
+                echo "Error: No parts with source-tag found in snapcraft.yaml"
+                echo "Please add source-tag to a part or specify the part using 'source-tag-part' input"
+                exit 1
+              fi
+
+              # Count the number of parts with source-tag
+              part_count=$(echo "${parts_with_source_tag}" | wc -l)
+
+              if [ "${part_count}" -eq 1 ]; then
+                # Only one part with source-tag, update it
+                yq -i ".parts.${parts_with_source_tag}.source-tag = \"${NEW_VERSION}\"" "${YAML_PATH}"
+              else
+                # Multiple parts and no user specification
+                echo "Error: Multiple parts with source-tag found: ${parts_with_source_tag}"
+                echo "Please specify which part to update using the 'source-tag-part' input"
+                exit 1
+              fi
+            fi
+          fi
+
+      - name: Commit changes
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        env:
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
+        run: |
+          git add .
+          git commit -m "Bump version to ${NEW_VERSION}"
+
+      - name: Push branch
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        env:
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
+        run: |
+          git branch
+          git show-ref
+          echo "${BRANCH_NAME}"
+          git push origin "${BRANCH_NAME}"
+
+      - name: Create Pull Request
+        if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.find-issue.outputs.version }}
+          ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+          PR_REVIEWER: ${{ inputs.pr-reviewer }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
+        run: |
+          extra_args=""
+          if [ -n "${PR_REVIEWER}" ]; then
+            extra_args="${extra_args} --reviewer ${PR_REVIEWER}"
+          fi
+
+          gh pr create \
+            --title "Bump version to ${NEW_VERSION}" \
+            --body "Closes #${ISSUE_NUMBER}" \
+            --head "${BRANCH_NAME}" \
+            ${extra_args}
