@@ -28,16 +28,6 @@ on:
         description: A test script to run against the snap.
         required: false
         type: string
-      snapd-risk:
-        default: ''
-        description: The snap risk to use when installing snapd (e.g., stable, candidate, beta, edge).
-        required: false
-        type: string
-      snapd-track:
-        default: 'latest'
-        description: The snap track to use when installing snapd.
-        required: false
-        type: string
 
 jobs:
   prepare-test-runners:
@@ -100,32 +90,22 @@ jobs:
 
       - name: Install snapd
         run: |
-          if [ -n "${{ inputs.snapd-risk }}" ]; then
-            SNAPD_CHANNEL="${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}"
-            echo "Installing snapd from channel ${SNAPD_CHANNEL}"
-            # Install snapd as a snap if not already installed
-            if ! snap list snapd &> /dev/null; then
-              sudo snap install snapd
-            fi
-            sudo snap refresh snapd --channel="${SNAPD_CHANNEL}"
-          else
-            echo "Using default snapd version"
+          echo "Installing snapd from latest/stable channel"
+          # Install snapd as a snap if not already installed
+          if ! snap list snapd &> /dev/null; then
+            sudo snap install snapd
           fi
+          sudo snap refresh snapd --channel=latest/stable
         if: "${{ inputs.lxd-image == '' }}"
 
       - name: Install snapd in the container
         run: |
-          if [ -n "${{ inputs.snapd-risk }}" ]; then
-            SNAPD_CHANNEL="${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}"
-            echo "Installing snapd from channel ${SNAPD_CHANNEL} in container"
-            # Install snapd as a snap if not already installed
-            if ! lxc exec lxc-container -- sh -c "snap list snapd" &> /dev/null; then
-              lxc exec lxc-container -- sh -c "snap install snapd"
-            fi
-            lxc exec lxc-container -- sh -c "snap refresh snapd --channel=\"${SNAPD_CHANNEL}\""
-          else
-            echo "Using default snapd version in container"
+          echo "Installing snapd from latest/stable channel in container"
+          # Install snapd as a snap if not already installed
+          if ! lxc exec lxc-container -- sh -c "snap list snapd" &> /dev/null; then
+            lxc exec lxc-container -- sh -c "snap install snapd"
           fi
+          lxc exec lxc-container -- sh -c "snap refresh snapd --channel=latest/stable"
         if: "${{ inputs.lxd-image != '' }}"
 
       - name: Push the snap to the container
