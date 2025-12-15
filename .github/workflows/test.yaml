@@ -106,10 +106,9 @@ jobs:
         if: "${{ inputs.lxd-image != '' }}"
 
       - name: Install snapd
-        env:
-          SNAPD_CHANNEL: '${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}'
         run: |
           if [ -n "${{ inputs.snapd-risk }}" ]; then
+            SNAPD_CHANNEL="${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}"
             echo "Installing snapd from channel ${SNAPD_CHANNEL}"
             sudo snap refresh snapd --channel="${SNAPD_CHANNEL}"
           else
@@ -127,10 +126,9 @@ jobs:
         if: "${{ inputs.lxd-image == '' }}"
 
       - name: Install snapd in the container
-        env:
-          SNAPD_CHANNEL: '${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}'
         run: |
           if [ -n "${{ inputs.snapd-risk }}" ]; then
+            SNAPD_CHANNEL="${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}"
             echo "Installing snapd from channel ${SNAPD_CHANNEL} in container"
             lxc exec lxc-container -- sh -c "snap refresh snapd --channel=\"${SNAPD_CHANNEL}\""
           else
