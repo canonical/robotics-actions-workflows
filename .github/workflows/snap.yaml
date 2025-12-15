@@ -89,6 +89,8 @@ jobs:
       git-ref: ${{ inputs.git-ref }}
       snap-install-args: ${{ inputs.snap-install-args }}
       snap-test-script: ${{ inputs.snap-test-script }}
+      snapd-risk: ${{ inputs.snap-risk }}
+      snapd-track: ${{ inputs.snap-track }}
 
   check-snapstore-login:
     runs-on: ubuntu-latest

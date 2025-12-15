@@ -28,6 +28,16 @@ on:
         description: A test script to run against the snap.
         required: false
         type: string
+      snapd-risk:
+        default: ''
+        description: The snap risk to use when installing snapd (e.g., stable, candidate, beta, edge).
+        required: false
+        type: string
+      snapd-track:
+        default: 'latest'
+        description: The snap track to use when installing snapd.
+        required: false
+        type: string
 
 jobs:
   prepare-test-runners:
@@ -95,6 +105,18 @@ jobs:
           done
         if: "${{ inputs.lxd-image != '' }}"
 
+      - name: Install snapd
+        env:
+          SNAPD_CHANNEL: '${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}'
+        run: |
+          if [ -n "${{ inputs.snapd-risk }}" ]; then
+            echo "Installing snapd from channel ${SNAPD_CHANNEL}"
+            sudo snap refresh snapd --channel="${SNAPD_CHANNEL}"
+          else
+            echo "Using default snapd version"
+          fi
+        if: "${{ inputs.lxd-image == '' }}"
+
       - name: Install the snap
         env:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
@@ -103,6 +125,18 @@ jobs:
             sudo snap install ${snap} ${SNAPCRAFT_INSTALL_ARGS}
           done
         if: "${{ inputs.lxd-image == '' }}"
+
+      - name: Install snapd in the container
+        env:
+          SNAPD_CHANNEL: '${{ inputs.snapd-track }}/${{ inputs.snapd-risk }}'
+        run: |
+          if [ -n "${{ inputs.snapd-risk }}" ]; then
+            echo "Installing snapd from channel ${SNAPD_CHANNEL} in container"
+            lxc exec lxc-container -- sh -c "snap refresh snapd --channel=\"${SNAPD_CHANNEL}\""
+          else
+            echo "Using default snapd version in container"
+          fi
+        if: "${{ inputs.lxd-image != '' }}"
 
       - name: Install the snap in the container
         env:

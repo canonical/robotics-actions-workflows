@@ -145,6 +145,10 @@ especially convenient for intricate multi-snaps deployments.
 Similarly to the `build` workflow, callers can define the runner it is executed on.
 Note that it will only install the snap(s) of matching architecture.
 
+Optionally, a specific version of snapd can be installed before testing by specifying the `snapd-risk` and `snapd-track` inputs.
+This allows testing with different snapd versions (e.g., testing with snapd from the edge channel).
+If not specified, the default snapd version available on the system is used.
+
 By default the workflow solely make sure the snap(s) is installable and calls `snapcraft info` on it.
 However, the caller may provide an additional custom test as a bash script through the `snap-test-script` option.
 For instance:
@@ -169,6 +173,13 @@ The `test` uses the following subset of options from the `snap` workflow:
 - `git-ref`
 - `snap-install-args`
 - `snap-test-script`
+
+Additionally, the `test` workflow accepts the following inputs that control snapd installation:
+
+- `snapd-risk` - The snap risk to use when installing snapd (e.g., stable, candidate, beta, edge). Defaults to empty (uses system default).
+- `snapd-track` - The snap track to use when installing snapd. Defaults to 'latest'.
+
+When called from the `snap` workflow, the `snap-risk` and `snap-track` values are forwarded as `snapd-risk` and `snapd-track` respectively, allowing tests to run with the same snapd version as the target publication channel.
 
 ### The publish workflow
 
