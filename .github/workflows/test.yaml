@@ -88,6 +88,26 @@ jobs:
           done
         if: "${{ inputs.lxd-image != '' }}"
 
+      - name: Install snapd
+        run: |
+          echo "Installing snapd from latest/stable channel"
+          # Install snapd as a snap if not already installed
+          if ! snap list snapd &> /dev/null; then
+            sudo snap install snapd
+          fi
+          sudo snap refresh snapd --channel=latest/stable
+        if: "${{ inputs.lxd-image == '' }}"
+
+      - name: Install snapd in the container
+        run: |
+          echo "Installing snapd from latest/stable channel in container"
+          # Install snapd as a snap if not already installed
+          if ! lxc exec lxc-container -- sh -c "snap list snapd" &> /dev/null; then
+            lxc exec lxc-container -- sh -c "snap install snapd"
+          fi
+          lxc exec lxc-container -- sh -c "snap refresh snapd --channel=latest/stable"
+        if: "${{ inputs.lxd-image != '' }}"
+
       - name: Push the snap to the container
         run: |
           for snap in ${{ steps.get-snap-file.outputs.snap-files }}; do
