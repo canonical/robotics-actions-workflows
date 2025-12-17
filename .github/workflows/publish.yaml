@@ -60,14 +60,22 @@ jobs:
         snap: ${{ fromJson(needs.prepare-publish.outputs.matrix) }}
     steps:
 
+      - name: Find out the arch
+        id: get-arch
+        run: |
+          echo "arch=$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
+
+      - name: Find out the branch name
+        id: get-branch
+        run: |
+          branch_name="${{ inputs.git-ref }}"
+          echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
+
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
           path: .
-          # @todo(artivis) The matrix is based on the snap filename to be published.
-          # Associate it the artifact name so that this job only downloads
-          # the one artifact it needs.
-          pattern: 'workflow-build-snap-*'
+          pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*-${{ steps.get-branch.outputs.branch_name }'
 
       - name: Set snap channel
         id: set-snap-channel
