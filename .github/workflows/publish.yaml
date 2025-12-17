@@ -75,7 +75,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
-          pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*-${{ steps.get-branch.outputs.branch_name }'
+          pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*-${{ steps.get-branch.outputs.branch_name }}'
 
       - name: Set snap channel
         id: set-snap-channel
