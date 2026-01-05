@@ -280,6 +280,27 @@ jobs:
           PR_REVIEWER: ${{ inputs.pr-reviewer }}
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
         run: |
+          # Find all open monitoring issues to close them all
+          echo "Finding all open monitoring issues to close..."
+          all_issues=$(gh issue --repo ${{ github.repository }} list --state open \
+            --search '[CI] Found version in:title' --json number \
+            --limit 100)
+
+          # Build the PR body that closes the current issue and any older issues
+          pr_body="Closes #${ISSUE_NUMBER}"
+
+          if [ -n "${all_issues}" ] && [ "${all_issues}" != "[]" ]; then
+            # Add older monitoring issues (those with lower issue numbers) to the PR body
+            older_issues=$(echo "${all_issues}" | jq -r --argjson current "${ISSUE_NUMBER}" \
+              '.[] | select(.number < $current) | .number')
+            for issue in ${older_issues}; do
+              pr_body="${pr_body}"$'\n'"Closes #${issue}"
+            done
+          fi
+
+          echo "PR body will close the following issues:"
+          echo "${pr_body}"
+
           extra_args=""
           if [ -n "${PR_REVIEWER}" ]; then
             extra_args="${extra_args} --reviewer ${PR_REVIEWER}"
@@ -287,6 +308,6 @@ jobs:
 
           gh pr create \
             --title "Bump version to ${NEW_VERSION}" \
-            --body "Closes #${ISSUE_NUMBER}" \
+            --body "${pr_body}" \
             --head "${BRANCH_NAME}" \
             ${extra_args}
