@@ -14,6 +14,11 @@ on:
         description: Snap Store channel track use for publication.
         required: false
         type: string
+      artifact-pattern:
+        default: 'workflow-build-snap-*'
+        description: The artifact pattern to publish.
+        required: false
+        type: string
     secrets:
       snapstore-login:
         description: Snap Store credential (see 'snapcraft export-login').
@@ -40,7 +45,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
-          pattern: 'workflow-build-snap-*'
+          pattern: '${{ inputs.artifact-pattern }}'
 
       - name: Retrieve snap file
         id: get-snap-file
@@ -60,24 +65,23 @@ jobs:
         snap: ${{ fromJson(needs.prepare-publish.outputs.matrix) }}
     steps:
 
-      - name: Find out the arch
-        id: get-arch
+      - name: Retrieve artifact name
+        id: get-artifact-name
+        env:
+          SNAP_PATH: ${{ matrix.snap }}
         run: |
-          echo "arch=$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
-
-      - name: Find out the branch name
-        id: get-branch
-        run: |
-          branch_name="${{ inputs.git-ref }}"
-          echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
+          artifact_path="${SNAP_PATH#./}"
+          artifact_name="${artifact_path%%/*}"
+          echo "artifact-name=${artifact_name}" >> "$GITHUB_OUTPUT"
 
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
           path: .
-          pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*-${{ steps.get-branch.outputs.branch_name }}'
+          pattern: '${{ inputs.artifact-pattern }}'
 
       - name: Set snap channel
+
         id: set-snap-channel
         env:
           SNAP_TRACK: ${{ inputs.snap-track }}
