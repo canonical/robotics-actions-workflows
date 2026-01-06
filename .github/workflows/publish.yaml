@@ -81,7 +81,6 @@ jobs:
           pattern: '${{ inputs.artifact-pattern }}'
 
       - name: Set snap channel
-
         id: set-snap-channel
         env:
           SNAP_TRACK: ${{ inputs.snap-track }}
