@@ -71,15 +71,6 @@ jobs:
         snap: ${{ fromJson(needs.prepare-publish.outputs.matrix) }}
     steps:
 
-      - name: Retrieve artifact name
-        id: get-artifact-name
-        env:
-          SNAP_PATH: ${{ matrix.snap }}
-        run: |
-          artifact_path="${SNAP_PATH#./}"
-          artifact_name="${artifact_path%%/*}"
-          echo "artifact-name=${artifact_name}" >> "$GITHUB_OUTPUT"
-
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
