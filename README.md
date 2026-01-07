@@ -188,7 +188,6 @@ The `publish` uses the following subset of options from the `snap` workflow:
 - `snap-risk`
 - `snap-track`
 
-
 A complete working example can be found [here](https://github.com/canonical/turtlebot3c-snap/blob/main/.github/workflows/snap.yaml).
 
 ### The promote workflow
