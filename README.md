@@ -178,12 +178,13 @@ It uses the [canonical/action-publish](https://github.com/canonical/action-publi
 It publishes the snap to `edge` unless the GitHub reference is a tag,
 in which case it publishes to `candidate`.
 
-Note that all snaps are published to the same track defined by `snap-track` (e.g. `snap-track: 5.x`).
+Note that all snaps from the `git-ref` branch are published to the same track defined by `snap-track` (e.g. `snap-track: 5.x`).
 
 #### Options
 
 The `publish` uses the following subset of options from the `snap` workflow:
 
+- `git-ref`
 - `snap-risk`
 - `snap-track`
 

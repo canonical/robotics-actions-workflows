@@ -110,6 +110,7 @@ jobs:
     needs: [build, test, check-snapstore-login]
     uses: ./.github/workflows/publish.yaml
     with:
+      git-ref: ${{ inputs.git-ref }}
       snap-risk: ${{ inputs.snap-risk }}
       snap-track: ${{ inputs.snap-track }}
     secrets:

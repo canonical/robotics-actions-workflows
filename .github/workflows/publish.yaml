@@ -3,6 +3,11 @@ name: publish
 on:
   workflow_call:
     inputs:
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch that published the artifacts.
+        required: false
+        type: string
       snap-risk:
         default: ""
         description: Snap Store channel risk use for publication. Defaults to 'edge'
@@ -36,11 +41,17 @@ jobs:
             exit 1
           fi
 
+      - name: Find out the branch name
+        id: get-branch
+        run: |
+          branch_name="${{ inputs.git-ref }}"
+          echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
+
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
           path: .
-          pattern: 'workflow-build-snap-*'
+          pattern: 'workflow-build-snap-*-${{ steps.get-branch.outputs.branch_name }}'
 
       - name: Retrieve snap file
         id: get-snap-file
@@ -60,22 +71,11 @@ jobs:
         snap: ${{ fromJson(needs.prepare-publish.outputs.matrix) }}
     steps:
 
-      - name: Find out the arch
-        id: get-arch
-        run: |
-          echo "arch=$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
-
-      - name: Find out the branch name
-        id: get-branch
-        run: |
-          branch_name="${{ inputs.git-ref }}"
-          echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
-
       - name: Download snap artifact
         uses: actions/download-artifact@v4
         with:
           path: .
-          pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*-${{ steps.get-branch.outputs.branch_name }}'
+          pattern: 'workflow-build-snap-*'
 
       - name: Set snap channel
         id: set-snap-channel
