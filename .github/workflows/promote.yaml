@@ -42,7 +42,13 @@ jobs:
         run: sudo snap install snapcraft --classic
 
       - name: Promote snap
-        run: snapcraft promote ${{ inputs.snap }} --from-channel ${{ inputs.from-channel }} --to-channel ${{ inputs.to-channel }} --yes
+        env:
+          SNAPCRAFT_HAS_TTY: "true" # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
+        # Note: using `yes |` instead of `--yes` because snapcraft will
+        #       refuse to non-interactively promote a snap from the edge
+        #       channel if it is done without any branch qualifiers
+        # see: https://github.com/canonical/snapcraft/issues/5945
+        run: yes | snapcraft promote ${{ inputs.snap }} --from-channel ${{ inputs.from-channel }} --to-channel ${{ inputs.to-channel }}
 
       - uses: actions/upload-artifact@v4
         name: Upload Snapcraft promote logs
