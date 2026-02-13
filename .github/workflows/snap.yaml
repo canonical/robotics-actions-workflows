@@ -115,7 +115,7 @@ jobs:
       snap-track: ${{ inputs.snap-track }}
     secrets:
       snapstore-login: ${{ secrets.snapstore-login }}
-    if: needs.check-snapstore-login.outputs.defined == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: needs.check-snapstore-login.outputs.defined == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
 
   cleanup:
     if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
