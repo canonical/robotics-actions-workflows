@@ -68,7 +68,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: '${{ inputs.git-ref }}'
 
@@ -95,7 +95,7 @@ jobs:
           echo "artifact-name=workflow-build-snap-$(basename -s .snap ${{ steps.build-snap.outputs.snap }})-${{ steps.get-branch.outputs.branch_name }}" >> "$GITHUB_OUTPUT"
 
       - name: Upload snap artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
           path: '${{ steps.build-snap.outputs.snap }}'

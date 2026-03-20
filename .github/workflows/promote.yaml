@@ -44,7 +44,7 @@ jobs:
       - name: Promote snap
         run: snapcraft promote ${{ inputs.snap }} --from-channel ${{ inputs.from-channel }} --to-channel ${{ inputs.to-channel }} --yes
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         name: Upload Snapcraft promote logs
         if: always()
         with:
