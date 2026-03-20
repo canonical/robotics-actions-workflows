@@ -48,5 +48,5 @@ jobs:
         name: Upload Snapcraft promote logs
         if: always()
         with:
-          name: snapcraft_logs
+          name: snapcraft_logs_${{ inputs.snap }}
           path: /home/runner/.local/state/snapcraft/log/
