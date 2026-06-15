@@ -5,8 +5,8 @@ on:
     inputs:
       snap:
         default: ''
-        description: The snap to promote.
-        required: true
+        description: The snap to promote. If not provided, the name is inferred from the snapcraft.yaml.
+        required: false
         type: string
       from-channel:
         default: 'latest/candidate'
@@ -16,6 +16,16 @@ on:
       to-channel:
         default: 'latest/stable'
         description: The channel to which to promote.
+        required: false
+        type: string
+      snapcraft-source-subdir:
+        default: '.'
+        description: The directory of the snapcraft project. Used to infer the snap name when the snap input is not provided.
+        required: false
+        type: string
+      git-ref:
+        default: '${{ github.ref }}'
+        description: The branch to checkout. Used to infer the snap name when the snap input is not provided.
         required: false
         type: string
     secrets:
@@ -45,12 +55,38 @@ jobs:
             exit 1
           fi
 
+      - name: Checkout
+        if: inputs.snap == ''
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: '${{ inputs.git-ref }}'
+
+      - name: Parse snapcraft metadata
+        if: inputs.snap == ''
+        id: parse-metadata
+        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
+        with:
+          snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
+
+      - name: Resolve snap name
+        id: resolve-snap
+        env:
+          SNAP_INPUT: '${{ inputs.snap }}'
+          SNAP_FROM_YAML: '${{ steps.parse-metadata.outputs.snap-name }}'
+        run: |
+          snap_name="${SNAP_INPUT:-${SNAP_FROM_YAML}}"
+          if [ -z "${snap_name}" ]; then
+            echo "Error: no snap name provided and none found in snapcraft.yaml"
+            exit 1
+          fi
+          echo "snap-name=${snap_name}" >> "$GITHUB_OUTPUT"
+
       - name: Setup Snapcraft
         run: sudo snap install snapcraft --classic
 
       - name: Promote snap
         env:
-          SNAP: '${{ inputs.snap }}'
+          SNAP: '${{ steps.resolve-snap.outputs.snap-name }}'
           FROM_CHANNEL: '${{ inputs.from-channel }}'
           TO_CHANNEL: '${{ inputs.to-channel }}'
         run: snapcraft promote "${SNAP}" --from-channel "${FROM_CHANNEL}" --to-channel "${TO_CHANNEL}" --yes
@@ -59,5 +95,5 @@ jobs:
         name: Upload Snapcraft promote logs
         if: always()
         with:
-          name: snapcraft_logs_${{ inputs.snap }}
+          name: snapcraft_logs_${{ steps.resolve-snap.outputs.snap-name }}
           path: /home/runner/.local/state/snapcraft/log/

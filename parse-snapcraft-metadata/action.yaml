@@ -1,0 +1,79 @@
+name: Parse Snapcraft metadata
+description: >-
+  Find the snapcraft.yaml file for a project and parse the snap name and
+  version from it. Installs yq via snap if it is not already on the PATH.
+
+inputs:
+  snapcraft-source-subdir:
+    default: '.'
+    description: The directory of the snapcraft project.
+    required: false
+
+outputs:
+  yaml-path:
+    description: Relative path to the found snapcraft.yaml file.
+    value: ${{ steps.parse.outputs.yaml-path }}
+  snap-name:
+    description: The snap name field from the snapcraft.yaml.
+    value: ${{ steps.parse.outputs.snap-name }}
+  snap-version:
+    description: >-
+      The snap version. When adopt-info is used this is the source-tag of the
+      referenced part; otherwise it is the top-level version field.
+    value: ${{ steps.parse.outputs.snap-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install yq
+      shell: bash
+      run: |
+        if ! command -v yq &>/dev/null; then
+          sudo snap install yq
+        fi
+
+    - name: Find and parse snapcraft.yaml
+      id: parse
+      shell: bash
+      env:
+        PROJECT_ROOT: ${{ inputs.snapcraft-source-subdir }}
+      run: |
+        project_root="${PROJECT_ROOT:-.}"
+
+        valid_paths=(
+          "${project_root}/.snapcraft.yaml"
+          "${project_root}/build-aux/snap/snapcraft.yaml"
+          "${project_root}/snap/snapcraft.yaml"
+          "${project_root}/snapcraft.yaml"
+        )
+
+        yaml_path=""
+        for file in "${valid_paths[@]}"; do
+          if [[ -f "${file}" ]]; then
+            yaml_path="${file}"
+            break
+          fi
+        done
+
+        if [[ -z "${yaml_path}" ]]; then
+          echo "No snapcraft.yaml found in '${project_root}'"
+          exit 1
+        fi
+
+        echo "Found snapcraft.yaml at '${yaml_path}'."
+        echo "yaml-path=${yaml_path}" >> "$GITHUB_OUTPUT"
+
+        snap_name="$(yq -r '.name' "${yaml_path}")"
+        if [[ -z "${snap_name}" || "${snap_name}" == "null" ]]; then
+          echo "Error: could not parse snap name from '${yaml_path}'"
+          exit 1
+        fi
+        echo "snap-name=${snap_name}" >> "$GITHUB_OUTPUT"
+
+        if yq '. | has("adopt-info")' "${yaml_path}" | grep -q "true" && \
+           yq '.parts[.adopt-info] | has("source-tag")' "${yaml_path}" | grep -q "true"; then
+          snap_version="$(yq '.parts[.adopt-info].source-tag' "${yaml_path}")"
+        else
+          snap_version="$(yq -r '.version' "${yaml_path}")"
+        fi
+        echo "snap-version=${snap_version}" >> "$GITHUB_OUTPUT"

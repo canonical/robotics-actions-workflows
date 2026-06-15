@@ -52,7 +52,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo snap install yq
           sudo apt-get update && sudo apt-get install -y jq
 
       - name: Checkout
@@ -164,35 +163,12 @@ jobs:
           git checkout -b "${branch_name}"
           echo "branch-name=${branch_name}" >> "$GITHUB_OUTPUT"
 
-      - name: Find and parse snapcraft.yaml
+      - name: Parse snapcraft metadata
         if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
         id: parse
-        env:
-          project_root: ${{ inputs.snapcraft-source-subdir }}
-        run: |
-          # If no project path is specified, default to top-level of repo
-          project_root="${project_root:-.}"
-
-          valid_paths=(
-            "${project_root}/.snapcraft.yaml"
-            "${project_root}/build-aux/snap/snapcraft.yaml"
-            "${project_root}/snap/snapcraft.yaml"
-            "${project_root}/snapcraft.yaml"
-          )
-
-          for file in "${valid_paths[@]}"; do
-            if [[ -f "$file" ]]; then
-              yaml_path="$file"
-              break
-            fi
-          done
-
-          if [[ -z "${yaml_path}" ]]; then
-            echo "No snapcraft.yaml found"
-            exit 1
-          fi
-
-          echo "yaml-path=${yaml_path}" >> "$GITHUB_OUTPUT"
+        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
+        with:
+          snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
       - name: Update snapcraft.yaml
         if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'

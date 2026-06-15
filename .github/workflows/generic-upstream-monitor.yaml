@@ -42,49 +42,16 @@ jobs:
       issues: write
     steps:
 
-      - name: Install dependencies
-        run: sudo snap install yq
-
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: '${{ inputs.git-ref }}'
 
-      - name: Find and parse snapcraft.yaml to retrieve the version
+      - name: Parse snapcraft metadata
         id: parse
-        env:
-          project_root: ${{ inputs.snapcraft-source-subdir }}
-        run: |
-          # If no project path is specified, default to top-level of repo
-          project_root="${project_root:-.}"
-
-          valid_paths=(
-            "${project_root}/.snapcraft.yaml"
-            "${project_root}/build-aux/snap/snapcraft.yaml"
-            "${project_root}/snap/snapcraft.yaml"
-            "${project_root}/snapcraft.yaml"
-          )
-
-          for file in "${valid_paths[@]}"; do
-            if [[ -f "$file" ]]; then
-              yaml_path="$file"
-            fi
-          done
-
-          if [[ -z "${yaml_path}" ]]; then
-            echo "No snapcraft.yaml found"
-            exit 1
-          fi
-
-          if yq '. | has("adopt-info")' "${yaml_path}" && yq '.parts[.adopt-info] | has("source-tag")' "${yaml_path}"; then
-            version="$(yq '.parts[.adopt-info].source-tag' "${yaml_path}")"
-          else
-            version="$(yq -r '.version' "${yaml_path}")"
-          fi
-
-          if [ -z "${version}" ]; then exit 1; fi
-
-          echo "snap-version=${version}" >> "$GITHUB_OUTPUT"
+        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
+        with:
+          snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
       - name: Create get-upstream-version script
         shell: bash

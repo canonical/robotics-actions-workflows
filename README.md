@@ -216,9 +216,11 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 
 | Option | Default Value | Description | Required |
 |---|---|---|---|
-| `snap` |  | The snap to promote. | true |
+| `snap` | '' | The snap to promote. If not provided, the name is inferred from the local snapcraft.yaml. | false |
 | `from-channel` | latest/candidate | The channel from which to promote. | false |
 | `to-channel` | latest/stable | The channel to which to promote. | false |
+| `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project (used when inferring the snap name). | false |
+| `git-ref` | ${{ github.ref }} | The branch to checkout (used when inferring the snap name). | false |
 
 #### Secrets
 
