@@ -62,7 +62,7 @@ jobs:
           echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
 
       - name: Download snap artifact(s)
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           path: .
           pattern: 'workflow-build-snap-*${{ steps.get-arch.outputs.arch }}*-${{ steps.get-branch.outputs.branch_name }}'
@@ -75,7 +75,7 @@ jobs:
           echo "snap-files=${files}" >> "$GITHUB_OUTPUT"
 
       - name: Setup LXD
-        uses: canonical/setup-lxd@main
+        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
         if: "${{ inputs.lxd-image != '' }}"
 
       - name: Launch an LXD container
