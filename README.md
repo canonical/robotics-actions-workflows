@@ -30,6 +30,24 @@ jobs:
 
 Examples of this reusable workflow can be found at [`canonical/robotics-action-workflows-tests`](https://github.com/canonical/robotics-action-workflows-tests/tree/main/.github/workflows).
 
+## Local development
+
+The same lint checks that run in CI (`actionlint` + `shellcheck`) can be run locally with the helper script:
+
+```bash
+./scripts/lint.sh
+```
+
+If `actionlint` or `shellcheck` are not on your `PATH`, the script downloads the pinned versions automatically.
+Pass any extra `actionlint` flags directly (e.g. `./scripts/lint.sh -format '{{json .}}'`).
+
+To install the tools permanently:
+
+| Tool | Install |
+|---|---|
+| [actionlint](https://github.com/rhysd/actionlint) | `brew install actionlint` \| [releases page](https://github.com/rhysd/actionlint/releases) |
+| [shellcheck](https://github.com/koalaman/shellcheck) | `apt install shellcheck` \| `brew install shellcheck` |
+
 ## Details
 
 This repository contains several reusable workflows to automate the release of snaps.
