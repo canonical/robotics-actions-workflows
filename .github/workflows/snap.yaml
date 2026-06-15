@@ -109,9 +109,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ secrets.snapstore-login }}" != '' ]; then
-            echo "defined=true" >> $GITHUB_OUTPUT;
+            echo "defined=true" >> "$GITHUB_OUTPUT";
           else
-            echo "defined=false" >> $GITHUB_OUTPUT;
+            echo "defined=false" >> "$GITHUB_OUTPUT";
           fi
 
   publish:

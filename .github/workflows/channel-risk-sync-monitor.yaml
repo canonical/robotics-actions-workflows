@@ -102,7 +102,7 @@ jobs:
             exit 1
           fi
 
-          name="$(yq -r '.name' ${yaml_path})"
+          name="$(yq -r '.name' "${yaml_path}")"
 
           if [ -z "${name}" ]; then exit 1; fi
 
@@ -120,7 +120,7 @@ jobs:
           target_rev=$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
           aspirant_rev=$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
 
-          if (( ${aspirant_rev} > ${target_rev} )); then
+          if (( aspirant_rev > target_rev )); then
             echo "The revision on channel '${SNAP_ASPIRANT_CHANNEL}'"\
             "is newer than on channel '${SNAP_TARGET_CHANNEL}'"\
             "(${aspirant_rev} > ${target_rev})."
@@ -153,10 +153,14 @@ jobs:
       - name: Compare aspirant publication date to threshold
         if: steps.revision.outputs.is-newer == '1'
         id: compare
+        env:
+          PUB_DATE: ${{ steps.date.outputs.snap-aspirant-pub-date }}
+          THRESHOLD: ${{ inputs.threshold }}
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
         run: |
 
           # Convert the dates to seconds since epoch
-          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${{ steps.date.outputs.snap-aspirant-pub-date }}" +%s)
+          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${PUB_DATE}" +%s)
           TODAY_SECONDS=$(date +%s)
 
           # Calculate the difference in days
@@ -164,10 +168,10 @@ jobs:
           DIFF_DAYS=$((DIFF_SECS / 86400))
 
           # Compare the difference in days to the threshold
-          if (( ${DIFF_DAYS} >= ${{ inputs.threshold }} )); then
-            echo "The revision published on '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}'"\
+          if (( DIFF_DAYS >= THRESHOLD )); then
+            echo "The revision published on '${SNAP_ASPIRANT_CHANNEL}'"\
             "is waiting for promotion"\
-            "(${DIFF_DAYS} > ${{ inputs.threshold }})."
+            "(${DIFF_DAYS} > ${THRESHOLD})."
             echo "is-outdated=1" >> "$GITHUB_OUTPUT"
           else
             echo "is-outdated=0" >> "$GITHUB_OUTPUT"
@@ -193,9 +197,9 @@ jobs:
 
             echo "Creating a new issue."
 
-            extra_args=""
+            extra_args=()
             if [ -n "${ISSUE_ASSIGNEE}" ]; then
-              extra_args="${extra_args} --assignee ${ISSUE_ASSIGNEE}"
+              extra_args+=(--assignee "${ISSUE_ASSIGNEE}")
             fi
 
             echo -e "## Monitoring report\n\n" \
@@ -209,7 +213,7 @@ jobs:
             | \
             gh issue --repo "${REPO}" create \
               --title "[CI] Consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'." \
-              ${extra_args} \
+              "${extra_args[@]}" \
               --body-file -
           else
             echo "Issue already opened."

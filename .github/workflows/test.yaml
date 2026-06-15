@@ -132,8 +132,9 @@ jobs:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
           SNAP_FILES: '${{ steps.get-snap-file.outputs.snap-files }}'
         run: |
+          read -ra install_args <<< "${SNAPCRAFT_INSTALL_ARGS}"
           for snap in ${SNAP_FILES}; do
-            sudo snap install "${snap}" ${SNAPCRAFT_INSTALL_ARGS}
+            sudo snap install "${snap}" "${install_args[@]}"
           done
         if: "${{ inputs.lxd-image == '' }}"
 
@@ -153,7 +154,12 @@ jobs:
         id: get-snap-name
         env:
           SNAP_FILES: '${{ steps.get-snap-file.outputs.snap-files }}'
-        run: echo "snap-names=$(printf '%s ' $(for snap in ${SNAP_FILES}; do basename -s .snap "${snap}" | sed 's/_.*//'; done))" >> "$GITHUB_OUTPUT"
+        run: |
+          snap_names=()
+          for snap in ${SNAP_FILES}; do
+            snap_names+=("$(basename -s .snap "${snap}" | sed 's/_.*//')")
+          done
+          echo "snap-names=${snap_names[*]}" >> "$GITHUB_OUTPUT"
 
       - name: Snap info
         if: "${{ inputs.lxd-image == '' }}"

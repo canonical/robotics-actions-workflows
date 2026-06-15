@@ -211,7 +211,7 @@ jobs:
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
             echo "Adopting info"
-            adopt_info_part="$(yq '.adopt-info' ${YAML_PATH})"
+            adopt_info_part="$(yq '.adopt-info' "${YAML_PATH}")"
 
             # When adopt-info is used, only update source-tag, not the version field
             # Update source-tag for the part referenced by adopt-info
@@ -311,13 +311,13 @@ jobs:
           echo "PR body will close the following issues:"
           echo "${pr_body}"
 
-          extra_args=""
+          extra_args=()
           if [ -n "${PR_REVIEWER}" ]; then
-            extra_args="${extra_args} --reviewer ${PR_REVIEWER}"
+            extra_args+=(--reviewer "${PR_REVIEWER}")
           fi
 
           gh pr create \
             --title "Bump version to ${NEW_VERSION}" \
             --body "${pr_body}" \
             --head "${BRANCH_NAME}" \
-            ${extra_args}
+            "${extra_args[@]}"
