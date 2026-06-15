@@ -44,6 +44,9 @@ on:
         required: false
         type: number
 
+permissions:
+  contents: read
+
 concurrency:
   group: channel-risk-monitor-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -52,6 +55,7 @@ jobs:
   compare:
     runs-on: 'ubuntu-latest'
     permissions:
+      contents: read
       issues: write
     steps:
 

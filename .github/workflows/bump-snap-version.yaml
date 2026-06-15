@@ -34,6 +34,9 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: bump-snap-version-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false

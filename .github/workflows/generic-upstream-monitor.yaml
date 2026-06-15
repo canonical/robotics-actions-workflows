@@ -27,6 +27,9 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: upstream-monitor-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -35,6 +38,7 @@ jobs:
   compare:
     runs-on: 'ubuntu-latest'
     permissions:
+      contents: read
       issues: write
     steps:
 

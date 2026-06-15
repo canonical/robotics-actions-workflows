@@ -23,12 +23,18 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: gh-tag-monitor-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   compare:
+    permissions:
+      contents: read
+      issues: write
     uses: ./.github/workflows/generic-upstream-monitor.yaml
     with:
       git-ref: ${{ inputs.git-ref }}
