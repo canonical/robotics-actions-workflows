@@ -53,7 +53,9 @@ jobs:
 
       - name: Check snap name input
         if: "${{ inputs.snap-name != '' }}"
-        run: echo "snap-name=${{ inputs.snap-name }}" >> "$GITHUB_OUTPUT"
+        env:
+          SNAP_NAME: '${{ inputs.snap-name }}'
+        run: echo "snap-name=${SNAP_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         if: "${{ inputs.snap-name == '' }}"
@@ -105,9 +107,10 @@ jobs:
         env:
           SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
+          SNAP_NAME: "${{ steps.parse.outputs.snap-name }}"
         run: |
-          target_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
-          aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          target_rev=$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          aspirant_rev=$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
 
           if (( ${aspirant_rev} > ${target_rev} )); then
             echo "The revision on channel '${SNAP_ASPIRANT_CHANNEL}'"\
@@ -123,8 +126,9 @@ jobs:
         id: date
         env:
           SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+          SNAP_NAME: "${{ steps.parse.outputs.snap-name }}"
         run: |
-          PUB_DATE="$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{print $2}')"
+          PUB_DATE="$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{print $2}')"
 
           DATE_REGEX="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
 
@@ -167,29 +171,35 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
           SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+          ISSUE_ASSIGNEE: ${{ inputs.issue-assignee }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          THRESHOLD: ${{ inputs.threshold }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
-            --search '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }} in:title' --json number)"
+          search_issue="$(gh issue --repo "${REPO}" list --state open \
+            --search "${SNAP_ASPIRANT_CHANNEL} in:title" --json number)"
 
           if [[ ! "${search_issue}" =~ "number" ]]; then
 
             echo "Creating a new issue."
 
             extra_args=""
-            if [ ! -z "${{ inputs.issue-assignee }}" ]; then
-              extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
+            if [ -n "${ISSUE_ASSIGNEE}" ]; then
+              extra_args="${extra_args} --assignee ${ISSUE_ASSIGNEE}"
             fi
 
             echo -e "## Monitoring report\n\n" \
-            "- Author: @${{ github.triggering_actor }}\n" \
+            "- Author: @${TRIGGERING_ACTOR}\n" \
             "- Target channel: '${SNAP_TARGET_CHANNEL}'\n" \
             "- Aspirant channel: '${SNAP_ASPIRANT_CHANNEL}'\n" \
-            "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
-            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${{ inputs.threshold }} days'.\n" \
+            "- Workflow Path: '${WORKFLOW_REF}'\n\n" \
+            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${THRESHOLD} days'.\n" \
             "Please consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
-            "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "Workflow details at: https://github.com/${REPO}/actions/runs/${RUN_ID}" \
             | \
-            gh issue --repo ${{ github.repository }} create \
+            gh issue --repo "${REPO}" create \
               --title "[CI] Consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'." \
               ${extra_args} \
               --body-file -

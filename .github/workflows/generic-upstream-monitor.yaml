@@ -119,30 +119,38 @@ jobs:
         if: steps.compare.outputs.new-release == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_VERSION: ${{ steps.get-upstream-version.outputs.upstream-version }}
+          ISSUE_ASSIGNEE: ${{ inputs.issue-assignee }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          GIT_REF: ${{ github.ref }}
+          COMMIT_SHA: ${{ github.sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
-            --search '${{ steps.get-upstream-version.outputs.upstream-version }} in:title' --json number)"
+          search_issue="$(gh issue --repo "${REPO}" list --state open \
+            --search "${UPSTREAM_VERSION} in:title" --json number)"
 
           if [[ ! "${search_issue}" =~ "number" ]]; then
 
             echo "Creating a new issue."
 
             extra_args=""
-            if [ ! -z "${{ inputs.issue-assignee }}" ]; then
-              extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
+            if [ -n "${ISSUE_ASSIGNEE}" ]; then
+              extra_args="${extra_args} --assignee ${ISSUE_ASSIGNEE}"
             fi
 
             echo -e "## Monitoring report\n\n" \
-            "- Author: @${{ github.triggering_actor }}\n" \
-            "- Branch: '${{ github.ref }}'\n" \
-            "- Commit: ${{ github.sha }}\n" \
-            "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
-            "The workflow found a new version upstream: '${{ steps.get-upstream-version.outputs.upstream-version }}'.\n" \
+            "- Author: @${TRIGGERING_ACTOR}\n" \
+            "- Branch: '${GIT_REF}'\n" \
+            "- Commit: ${COMMIT_SHA}\n" \
+            "- Workflow Path: '${WORKFLOW_REF}'\n\n" \
+            "The workflow found a new version upstream: '${UPSTREAM_VERSION}'.\n" \
             "Please consider upgrading the snap.\n\n" \
-            "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "Workflow details at: https://github.com/${REPO}/actions/runs/${RUN_ID}" \
             | \
-            gh issue --repo ${{ github.repository }} create \
-              --title "[CI] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
+            gh issue --repo "${REPO}" create \
+              --title "[CI] Found version '${UPSTREAM_VERSION}' upstream" \
               ${extra_args} \
               --body-file -
           else

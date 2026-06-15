@@ -59,6 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_VERSION: ${{ inputs.new-version }}
           INPUT_ISSUE: ${{ inputs.issue-to-close }}
+          REPO: ${{ github.repository }}
         run: |
           # Check if inputs are partially provided
           if [ -n "${INPUT_VERSION}" ] || [ -n "${INPUT_ISSUE}" ]; then
@@ -75,7 +76,7 @@ jobs:
 
           # Find the latest open monitoring issue
           echo "Searching for latest monitoring issue..."
-          issues=$(gh issue --repo ${{ github.repository }} list --state open \
+          issues=$(gh issue --repo "${REPO}" list --state open \
             --search '[CI] Found version in:title' --json number,title \
             --limit 10)
 
@@ -115,11 +116,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+          REPO: ${{ github.repository }}
         run: |
           # Check if a PR already exists that closes this issue
           echo "Checking for existing PRs that close issue #${ISSUE_NUMBER}..."
           # Search for PRs using all GitHub closing keywords: close(s/d), fix(es/ed), resolve(s/d)
-          existing_prs=$(gh pr list --repo ${{ github.repository }} --state open \
+          existing_prs=$(gh pr list --repo "${REPO}" --state open \
             --search "(close #${ISSUE_NUMBER} OR closes #${ISSUE_NUMBER} OR closed #${ISSUE_NUMBER} OR fix #${ISSUE_NUMBER} OR fixes #${ISSUE_NUMBER} OR fixed #${ISSUE_NUMBER} OR resolve #${ISSUE_NUMBER} OR resolves #${ISSUE_NUMBER} OR resolved #${ISSUE_NUMBER}) in:body" \
             --json number,state,title)
 
@@ -279,10 +281,11 @@ jobs:
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
           PR_REVIEWER: ${{ inputs.pr-reviewer }}
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
+          REPO: ${{ github.repository }}
         run: |
           # Find all open monitoring issues to close them all
           echo "Finding all open monitoring issues to close..."
-          all_issues=$(gh issue --repo ${{ github.repository }} list --state open \
+          all_issues=$(gh issue --repo "${REPO}" list --state open \
             --search '[CI] Found version in:title' --json number \
             --limit 100)
 

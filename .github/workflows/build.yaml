@@ -85,14 +85,18 @@ jobs:
 
       - name: Find out the branch name
         id: get-branch
+        env:
+          GIT_REF: '${{ inputs.git-ref }}'
         run: |
-          branch_name="${{ inputs.git-ref }}"
-          echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
+          echo "branch_name=${GIT_REF//[\/-]/_}" >> "$GITHUB_OUTPUT"
 
       - name: Set unique artifact name
         id: artifact-unique-name
+        env:
+          SNAP_PATH: '${{ steps.build-snap.outputs.snap }}'
+          BRANCH_NAME: '${{ steps.get-branch.outputs.branch_name }}'
         run: |
-          echo "artifact-name=workflow-build-snap-$(basename -s .snap ${{ steps.build-snap.outputs.snap }})-${{ steps.get-branch.outputs.branch_name }}" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=workflow-build-snap-$(basename -s .snap "${SNAP_PATH}")-${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Upload snap artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

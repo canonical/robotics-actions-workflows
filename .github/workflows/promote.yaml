@@ -42,7 +42,11 @@ jobs:
         run: sudo snap install snapcraft --classic
 
       - name: Promote snap
-        run: snapcraft promote ${{ inputs.snap }} --from-channel ${{ inputs.from-channel }} --to-channel ${{ inputs.to-channel }} --yes
+        env:
+          SNAP: '${{ inputs.snap }}'
+          FROM_CHANNEL: '${{ inputs.from-channel }}'
+          TO_CHANNEL: '${{ inputs.to-channel }}'
+        run: snapcraft promote "${SNAP}" --from-channel "${FROM_CHANNEL}" --to-channel "${TO_CHANNEL}" --yes
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         name: Upload Snapcraft promote logs
