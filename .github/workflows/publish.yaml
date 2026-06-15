@@ -24,6 +24,10 @@ on:
         description: Snap Store credential (see 'snapcraft export-login').
         required: true
 
+concurrency:
+  group: publish-${{ github.workflow }}-${{ inputs.snap-track }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   prepare-publish:
     runs-on: ubuntu-latest

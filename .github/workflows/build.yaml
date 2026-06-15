@@ -34,6 +34,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   prepare-build-runners:
     runs-on: ubuntu-latest

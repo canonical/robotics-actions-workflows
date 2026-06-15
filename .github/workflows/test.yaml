@@ -29,6 +29,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   prepare-test-runners:
     runs-on: ubuntu-latest

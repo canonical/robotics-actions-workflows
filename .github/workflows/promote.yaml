@@ -23,6 +23,10 @@ on:
         description: Snap Store credential (see 'snapcraft export-login').
         required: true
 
+concurrency:
+  group: promote-${{ github.workflow }}-${{ inputs.snap }}-${{ inputs.to-channel }}
+  cancel-in-progress: false
+
 jobs:
   promote:
     runs-on: ubuntu-latest

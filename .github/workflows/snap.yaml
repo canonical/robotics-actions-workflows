@@ -69,6 +69,10 @@ on:
         description: Snap Store credential (see 'snapcraft export-login').
         required: false
 
+concurrency:
+  group: snap-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     uses: ./.github/workflows/build.yaml

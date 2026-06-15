@@ -44,6 +44,10 @@ on:
         required: false
         type: number
 
+concurrency:
+  group: channel-risk-monitor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   compare:
     runs-on: 'ubuntu-latest'
