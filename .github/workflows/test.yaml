@@ -143,10 +143,11 @@ jobs:
           SNAPCRAFT_INSTALL_ARGS : '${{ inputs.snap-install-args }}'
           SNAP_FILES: '${{ steps.get-snap-file.outputs.snap-files }}'
         run: |
+          read -ra install_args <<< "${SNAPCRAFT_INSTALL_ARGS}"
           for snap in ${SNAP_FILES}; do
             snap_basename="$(basename "${snap}")"
             echo "Installing snap '/home/ubuntu/${snap_basename}'"
-            lxc exec lxc-container -- sh -c "snap install /home/ubuntu/${snap_basename} ${SNAPCRAFT_INSTALL_ARGS}"
+            lxc exec lxc-container -- snap install "/home/ubuntu/${snap_basename}" "${install_args[@]}"
           done
         if: "${{ inputs.lxd-image != '' }}"
 
@@ -176,7 +177,7 @@ jobs:
           SNAP_NAMES: '${{ steps.get-snap-name.outputs.snap-names }}'
         run: |
           for snap in ${SNAP_NAMES}; do
-            lxc exec lxc-container -- sh -c "snap info ${snap}"
+            lxc exec lxc-container -- snap info "${snap}"
           done
 
       - name: Create test script
