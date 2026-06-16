@@ -146,7 +146,7 @@ jobs:
           if (( DIFF_DAYS >= THRESHOLD )); then
             echo "The revision published on '${SNAP_ASPIRANT_CHANNEL}'"\
             "is waiting for promotion"\
-            "(${DIFF_DAYS} > ${THRESHOLD})."
+            "(${DIFF_DAYS} >= ${THRESHOLD})."
             echo "is-outdated=1" >> "$GITHUB_OUTPUT"
           else
             echo "is-outdated=0" >> "$GITHUB_OUTPUT"
@@ -182,7 +182,7 @@ jobs:
             "- Target channel: '${SNAP_TARGET_CHANNEL}'\n" \
             "- Aspirant channel: '${SNAP_ASPIRANT_CHANNEL}'\n" \
             "- Workflow Path: '${WORKFLOW_REF}'\n\n" \
-            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${THRESHOLD} days'.\n" \
+            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${THRESHOLD} days.\n" \
             "Please consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
             "Workflow details at: https://github.com/${REPO}/actions/runs/${RUN_ID}" \
             | \
