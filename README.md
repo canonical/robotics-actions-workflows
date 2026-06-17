@@ -44,9 +44,9 @@ Pass any extra `actionlint` flags directly (e.g. `./scripts/lint.sh -format '{{j
 To install the tools permanently:
 
 | Tool | Install |
-|---|---|
-| [actionlint](https://github.com/rhysd/actionlint) | `brew install actionlint` \| [releases page](https://github.com/rhysd/actionlint/releases) |
-| [shellcheck](https://github.com/koalaman/shellcheck) | `apt install shellcheck` \| `brew install shellcheck` |
+| --- | --- |
+| [actionlint](https://github.com/rhysd/actionlint) | [releases page](https://github.com/rhysd/actionlint/releases) |
+| [shellcheck](https://github.com/koalaman/shellcheck) | `apt install shellcheck` |
 
 ## Details
 
