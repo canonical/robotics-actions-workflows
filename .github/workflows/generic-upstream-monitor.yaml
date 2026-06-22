@@ -49,7 +49,7 @@ jobs:
 
       - name: Parse snapcraft metadata
         id: parse
-        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
+        uses: ./parse-snapcraft-metadata
         with:
           snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 

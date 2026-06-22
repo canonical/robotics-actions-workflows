@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: canonical/robotics-actions-workflows/string-to-json@main
+        uses: ./string-to-json
         with:
           string: ${{ inputs.runs-on }}
 

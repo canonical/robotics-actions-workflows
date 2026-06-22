@@ -64,7 +64,7 @@ jobs:
       - name: Parse snapcraft metadata
         if: inputs.snap == ''
         id: parse-metadata
-        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
+        uses: ./parse-snapcraft-metadata
         with:
           snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
