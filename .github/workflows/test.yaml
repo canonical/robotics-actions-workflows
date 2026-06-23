@@ -174,3 +174,30 @@ jobs:
         shell: bash
         run: lxc exec --user 1000 lxc-container -- sh -c "bash -euxo pipefail /home/ubuntu/test-script.sh"
         if: "${{ inputs.lxd-image != '' && inputs.snap-test-script != '' }}"
+
+      - name: Checkout sources
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: '${{ inputs.git-ref }}'
+          path: snapcraft-project
+
+      - name: Check for snapcraft tests
+        id: snapcraft-tests
+        working-directory: snapcraft-project
+        run: |
+          if [ -f spread.yaml ]; then
+            echo "Found spread.yaml, snapcraft tests are defined."
+            echo "has-tests=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "No spread.yaml found, skipping snapcraft tests."
+            echo "has-tests=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Snapcraft
+        if: steps.snapcraft-tests.outputs.has-tests == '1'
+        uses: canonical/craft-actions/snapcraft/setup@main
+
+      - name: Run snapcraft test
+        if: steps.snapcraft-tests.outputs.has-tests == '1'
+        working-directory: snapcraft-project
+        run: snapcraft test
