@@ -56,9 +56,9 @@ jobs:
       - name: Create get-upstream-version script
         shell: bash
         run: |
-          cat > get-upstream-version << 'EOF'
+          cat > get-upstream-version << 'WORKFLOW_GET_UPSTREAM_VERSION_EOF'
             ${{ inputs.script-get-upstream-version }}
-          EOF
+          WORKFLOW_GET_UPSTREAM_VERSION_EOF
           chmod +x get-upstream-version
 
       - name: Run get-upstream-version script
@@ -75,9 +75,9 @@ jobs:
       - name: Create script-compare-versions script
         shell: bash
         run: |
-          cat > compare-versions << 'EOF'
+          cat > compare-versions << 'WORKFLOW_COMPARE_VERSIONS_EOF'
             ${{ inputs.script-compare-versions }}
-          EOF
+          WORKFLOW_COMPARE_VERSIONS_EOF
           chmod +x compare-versions
 
       - name: Compare versions

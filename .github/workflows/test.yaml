@@ -184,9 +184,9 @@ jobs:
         if: inputs.snap-test-script != ''
         shell: bash
         run: |
-          cat > test-script.sh << 'EOF'
+          cat > test-script.sh << 'WORKFLOW_SNAP_TEST_SCRIPT_EOF'
             ${{ inputs.snap-test-script }}
-          EOF
+          WORKFLOW_SNAP_TEST_SCRIPT_EOF
 
       - name: Push test script LXD container
         run: lxc file push test-script.sh lxc-container/home/ubuntu/
