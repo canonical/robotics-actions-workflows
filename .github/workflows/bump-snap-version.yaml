@@ -34,6 +34,13 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
+concurrency:
+  group: bump-snap-version-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   bump-version:
     runs-on: 'ubuntu-latest'
@@ -45,11 +52,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo snap install yq
           sudo apt-get update && sudo apt-get install -y jq
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: '${{ inputs.git-ref }}'
 
@@ -59,6 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_VERSION: ${{ inputs.new-version }}
           INPUT_ISSUE: ${{ inputs.issue-to-close }}
+          REPO: ${{ github.repository }}
         run: |
           # Check if inputs are partially provided
           if [ -n "${INPUT_VERSION}" ] || [ -n "${INPUT_ISSUE}" ]; then
@@ -75,7 +82,7 @@ jobs:
 
           # Find the latest open monitoring issue
           echo "Searching for latest monitoring issue..."
-          issues=$(gh issue --repo ${{ github.repository }} list --state open \
+          issues=$(gh issue --repo "${REPO}" list --state open \
             --search '[CI] Found version in:title' --json number,title \
             --limit 10)
 
@@ -115,11 +122,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+          REPO: ${{ github.repository }}
         run: |
           # Check if a PR already exists that closes this issue
           echo "Checking for existing PRs that close issue #${ISSUE_NUMBER}..."
           # Search for PRs using all GitHub closing keywords: close(s/d), fix(es/ed), resolve(s/d)
-          existing_prs=$(gh pr list --repo ${{ github.repository }} --state open \
+          existing_prs=$(gh pr list --repo "${REPO}" --state open \
             --search "(close #${ISSUE_NUMBER} OR closes #${ISSUE_NUMBER} OR closed #${ISSUE_NUMBER} OR fix #${ISSUE_NUMBER} OR fixes #${ISSUE_NUMBER} OR fixed #${ISSUE_NUMBER} OR resolve #${ISSUE_NUMBER} OR resolves #${ISSUE_NUMBER} OR resolved #${ISSUE_NUMBER}) in:body" \
             --json number,state,title)
 
@@ -155,35 +163,12 @@ jobs:
           git checkout -b "${branch_name}"
           echo "branch-name=${branch_name}" >> "$GITHUB_OUTPUT"
 
-      - name: Find and parse snapcraft.yaml
+      - name: Parse snapcraft metadata
         if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
         id: parse
-        env:
-          project_root: ${{ inputs.snapcraft-source-subdir }}
-        run: |
-          # If no project path is specified, default to top-level of repo
-          project_root="${project_root:-.}"
-
-          valid_paths=(
-            "${project_root}/.snapcraft.yaml"
-            "${project_root}/build-aux/snap/snapcraft.yaml"
-            "${project_root}/snap/snapcraft.yaml"
-            "${project_root}/snapcraft.yaml"
-          )
-
-          for file in "${valid_paths[@]}"; do
-            if [[ -f "$file" ]]; then
-              yaml_path="$file"
-              break
-            fi
-          done
-
-          if [[ -z "${yaml_path}" ]]; then
-            echo "No snapcraft.yaml found"
-            exit 1
-          fi
-
-          echo "yaml-path=${yaml_path}" >> "$GITHUB_OUTPUT"
+        uses: ./parse-snapcraft-metadata
+        with:
+          snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
       - name: Update snapcraft.yaml
         if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
@@ -202,7 +187,7 @@ jobs:
           # Check if adopt-info is used
           if yq '. | has("adopt-info")' "${YAML_PATH}" | grep -q "true"; then
             echo "Adopting info"
-            adopt_info_part="$(yq '.adopt-info' ${YAML_PATH})"
+            adopt_info_part="$(yq '.adopt-info' "${YAML_PATH}")"
 
             # When adopt-info is used, only update source-tag, not the version field
             # Update source-tag for the part referenced by adopt-info
@@ -279,10 +264,11 @@ jobs:
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
           PR_REVIEWER: ${{ inputs.pr-reviewer }}
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch-name }}
+          REPO: ${{ github.repository }}
         run: |
           # Find all open monitoring issues to close them all
           echo "Finding all open monitoring issues to close..."
-          all_issues=$(gh issue --repo ${{ github.repository }} list --state open \
+          all_issues=$(gh issue --repo "${REPO}" list --state open \
             --search '[CI] Found version in:title' --json number \
             --limit 100)
 
@@ -301,13 +287,13 @@ jobs:
           echo "PR body will close the following issues:"
           echo "${pr_body}"
 
-          extra_args=""
+          extra_args=()
           if [ -n "${PR_REVIEWER}" ]; then
-            extra_args="${extra_args} --reviewer ${PR_REVIEWER}"
+            extra_args+=(--reviewer "${PR_REVIEWER}")
           fi
 
           gh pr create \
             --title "Bump version to ${NEW_VERSION}" \
             --body "${pr_body}" \
             --head "${BRANCH_NAME}" \
-            ${extra_args}
+            "${extra_args[@]}"

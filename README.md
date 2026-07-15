@@ -30,6 +30,24 @@ jobs:
 
 Examples of this reusable workflow can be found at [`canonical/robotics-action-workflows-tests`](https://github.com/canonical/robotics-action-workflows-tests/tree/main/.github/workflows).
 
+## Local development
+
+The same lint checks that run in CI (`actionlint` + `shellcheck`) can be run locally with the helper script:
+
+```bash
+./scripts/lint.sh
+```
+
+If `actionlint` or `shellcheck` are not on your `PATH`, the script downloads the pinned versions automatically.
+Pass any extra `actionlint` flags directly (e.g. `./scripts/lint.sh -format '{{json .}}'`).
+
+To install the tools permanently:
+
+| Tool | Install |
+| --- | --- |
+| [actionlint](https://github.com/rhysd/actionlint) | [releases page](https://github.com/rhysd/actionlint/releases) |
+| [shellcheck](https://github.com/koalaman/shellcheck) | `apt install shellcheck` |
+
 ## Details
 
 This repository contains several reusable workflows to automate the release of snaps.
@@ -198,9 +216,11 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 
 | Option | Default Value | Description | Required |
 |---|---|---|---|
-| `snap` |  | The snap to promote. | true |
+| `snap` | '' | The snap to promote. If not provided, the name is inferred from the local snapcraft.yaml. | false |
 | `from-channel` | latest/candidate | The channel from which to promote. | false |
 | `to-channel` | latest/stable | The channel to which to promote. | false |
+| `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project (used when inferring the snap name). | false |
+| `git-ref` | ${{ github.ref }} | The branch to checkout (used when inferring the snap name). | false |
 
 #### Secrets
 
@@ -300,3 +320,51 @@ it opens an issue.
 | `snap-track` | 'latest' | The track to use for the comparison. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
 | `threshold` | '10' | The threshold to trigger the issue (in days). | false |
+
+### Permissions
+
+Each reusable workflow follows the principle of least privilege:
+it declares an explicit, minimal set of [`GITHUB_TOKEN` permissions](https://docs.github.com/en/actions/security-for-github-actions/security-guidelines/automatic-token-authentication#permissions-for-the-github_token)
+and elevates them only on the specific job that needs more.
+
+Because a [called reusable workflow cannot be granted more permissions than its caller](https://docs.github.com/en/actions/using-workflows/reusing-workflows#access-and-permissions),
+the **caller** must grant at least the permissions listed below in the job that invokes the workflow.
+The recommended approach is to keep a restrictive default at the top of your workflow and grant the rest per job:
+
+```yaml
+# Restrictive default for the whole workflow.
+permissions: {}
+
+jobs:
+  snap:
+    permissions:
+      contents: read
+    uses: canonical/robotics-actions-workflows/.github/workflows/snap.yaml@main
+    secrets:
+      snapstore-login: ${{ secrets.SNAPSTORE_LOGIN }}
+```
+
+The permissions required by each workflow are:
+
+| Workflow | `contents` | `issues` | `pull-requests` | `actions` |
+|---|---|---|---|---|
+| [snap.yaml](.github/workflows/snap.yaml) | read | — | — | write¹ |
+| [build.yaml](.github/workflows/build.yaml) | read | — | — | — |
+| [test.yaml](.github/workflows/test.yaml) | read | — | — | — |
+| [publish.yaml](.github/workflows/publish.yaml) | read | — | — | — |
+| [promote.yaml](.github/workflows/promote.yaml) | read | — | — | — |
+| [generic-upstream-monitor.yaml](.github/workflows/generic-upstream-monitor.yaml) | read | write | — | — |
+| [upstream-gh-tag-monitor.yaml](.github/workflows/upstream-gh-tag-monitor.yaml) | read | write | — | — |
+| [channel-risk-sync-monitor.yaml](.github/workflows/channel-risk-sync-monitor.yaml) | read | write | — | — |
+| [bump-snap-version.yaml](.github/workflows/bump-snap-version.yaml) | write | read | write | — |
+
+¹ `actions: write` is only required when the `cleanup` option is enabled
+(it lets the workflow delete the build artifacts via the `delete-artifact` action).
+If you do not use `cleanup`, `contents: read` is sufficient.
+
+> [!NOTE]
+> The `bump-snap-version` workflow needs `contents: write` and `pull-requests: write`
+> to push the version-bump branch and open the pull request.
+> Note that pull requests created with the default `GITHUB_TOKEN` do not trigger further workflow runs;
+> use a [Personal Access Token or GitHub App token](https://docs.github.com/en/actions/security-for-github-actions/security-guidelines/automatic-token-authentication#using-the-github_token-in-a-workflow)
+> if you expect the bump PR to start your build/test CI.

@@ -34,6 +34,13 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   prepare-build-runners:
     runs-on: ubuntu-latest
@@ -42,7 +49,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: canonical/robotics-actions-workflows/string-to-json@main
+        uses: ./string-to-json
         with:
           string: ${{ inputs.runs-on }}
 
@@ -53,7 +60,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: canonical/robotics-actions-workflows/string-to-json@main
+        uses: ./string-to-json
         with:
           string: ${{ inputs.snapcraft-source-subdir }}
 
@@ -68,12 +75,12 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: '${{ inputs.git-ref }}'
 
       - name: Build snap
-        uses: canonical/action-build@v1
+        uses: canonical/action-build@ea14cdeb353272f75977040488ca191880509a8c # v1.1.0
         id: build-snap
         env:
           SNAPCRAFT_BUILD_INFO: 1
@@ -85,17 +92,21 @@ jobs:
 
       - name: Find out the branch name
         id: get-branch
+        env:
+          GIT_REF: '${{ inputs.git-ref }}'
         run: |
-          branch_name="${{ inputs.git-ref }}"
-          echo "branch_name=${branch_name//[\/-]/_}" >> "$GITHUB_OUTPUT"
+          echo "branch_name=${GIT_REF//[\/-]/_}" >> "$GITHUB_OUTPUT"
 
       - name: Set unique artifact name
         id: artifact-unique-name
+        env:
+          SNAP_PATH: '${{ steps.build-snap.outputs.snap }}'
+          BRANCH_NAME: '${{ steps.get-branch.outputs.branch_name }}'
         run: |
-          echo "artifact-name=workflow-build-snap-$(basename -s .snap ${{ steps.build-snap.outputs.snap }})-${{ steps.get-branch.outputs.branch_name }}" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=workflow-build-snap-$(basename -s .snap "${SNAP_PATH}")-${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Upload snap artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
           path: '${{ steps.build-snap.outputs.snap }}'

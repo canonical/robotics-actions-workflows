@@ -27,63 +27,38 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-monitor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   compare:
     runs-on: 'ubuntu-latest'
     permissions:
+      contents: read
       issues: write
     steps:
 
-      - name: Install dependencies
-        run: sudo snap install yq
-
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: '${{ inputs.git-ref }}'
 
-      - name: Find and parse snapcraft.yaml to retrieve the version
+      - name: Parse snapcraft metadata
         id: parse
-        env:
-          project_root: ${{ inputs.snapcraft-source-subdir }}
-        run: |
-          # If no project path is specified, default to top-level of repo
-          project_root="${project_root:-.}"
-
-          valid_paths=(
-            "${project_root}/.snapcraft.yaml"
-            "${project_root}/build-aux/snap/snapcraft.yaml"
-            "${project_root}/snap/snapcraft.yaml"
-            "${project_root}/snapcraft.yaml"
-          )
-
-          for file in "${valid_paths[@]}"; do
-            if [[ -f "$file" ]]; then
-              yaml_path="$file"
-            fi
-          done
-
-          if [[ -z "${yaml_path}" ]]; then
-            echo "No snapcraft.yaml found"
-            exit 1
-          fi
-
-          if yq '. | has("adopt-info")' "${yaml_path}" && yq '.parts[.adopt-info] | has("source-tag")' "${yaml_path}"; then
-            version="$(yq '.parts[.adopt-info].source-tag' ${yaml_path})"
-          else
-            version="$(yq -r '.version' ${yaml_path})"
-          fi
-
-          if [ -z "${version}" ]; then exit 1; fi
-
-          echo "snap-version=${version}" >> "$GITHUB_OUTPUT"
+        uses: ./parse-snapcraft-metadata
+        with:
+          snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
       - name: Create get-upstream-version script
         shell: bash
         run: |
-          cat > get-upstream-version << 'EOF'
+          cat > get-upstream-version << 'WORKFLOW_GET_UPSTREAM_VERSION_EOF'
             ${{ inputs.script-get-upstream-version }}
-          EOF
+          WORKFLOW_GET_UPSTREAM_VERSION_EOF
           chmod +x get-upstream-version
 
       - name: Run get-upstream-version script
@@ -100,9 +75,9 @@ jobs:
       - name: Create script-compare-versions script
         shell: bash
         run: |
-          cat > compare-versions << 'EOF'
+          cat > compare-versions << 'WORKFLOW_COMPARE_VERSIONS_EOF'
             ${{ inputs.script-compare-versions }}
-          EOF
+          WORKFLOW_COMPARE_VERSIONS_EOF
           chmod +x compare-versions
 
       - name: Compare versions
@@ -112,38 +87,46 @@ jobs:
           UPSTREAM_VERSION: "${{ steps.get-upstream-version.outputs.upstream-version }}"
         run: |
           set -euxo pipefail
-          NEW_RELEASE="$(./compare-versions ${UPSTREAM_VERSION} ${SNAP_VERSION})"
+          NEW_RELEASE="$(./compare-versions "${UPSTREAM_VERSION}" "${SNAP_VERSION}")"
           echo "new-release=${NEW_RELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Open issue
         if: steps.compare.outputs.new-release == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_VERSION: ${{ steps.get-upstream-version.outputs.upstream-version }}
+          ISSUE_ASSIGNEE: ${{ inputs.issue-assignee }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          GIT_REF: ${{ github.ref }}
+          COMMIT_SHA: ${{ github.sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
-            --search '${{ steps.get-upstream-version.outputs.upstream-version }} in:title' --json number)"
+          search_issue="$(gh issue --repo "${REPO}" list --state open \
+            --search "${UPSTREAM_VERSION} in:title" --json number)"
 
           if [[ ! "${search_issue}" =~ "number" ]]; then
 
             echo "Creating a new issue."
 
-            extra_args=""
-            if [ ! -z "${{ inputs.issue-assignee }}" ]; then
-              extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
+            extra_args=()
+            if [ -n "${ISSUE_ASSIGNEE}" ]; then
+              extra_args+=(--assignee "${ISSUE_ASSIGNEE}")
             fi
 
             echo -e "## Monitoring report\n\n" \
-            "- Author: @${{ github.triggering_actor }}\n" \
-            "- Branch: '${{ github.ref }}'\n" \
-            "- Commit: ${{ github.sha }}\n" \
-            "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
-            "The workflow found a new version upstream: '${{ steps.get-upstream-version.outputs.upstream-version }}'.\n" \
+            "- Author: @${TRIGGERING_ACTOR}\n" \
+            "- Branch: '${GIT_REF}'\n" \
+            "- Commit: ${COMMIT_SHA}\n" \
+            "- Workflow Path: '${WORKFLOW_REF}'\n\n" \
+            "The workflow found a new version upstream: '${UPSTREAM_VERSION}'.\n" \
             "Please consider upgrading the snap.\n\n" \
-            "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "Workflow details at: https://github.com/${REPO}/actions/runs/${RUN_ID}" \
             | \
-            gh issue --repo ${{ github.repository }} create \
-              --title "[CI] Found version '${{ steps.get-upstream-version.outputs.upstream-version }}' upstream" \
-              ${extra_args} \
+            gh issue --repo "${REPO}" create \
+              --title "[CI] Found version '${UPSTREAM_VERSION}' upstream" \
+              "${extra_args[@]}" \
               --body-file -
           else
             echo "Issue already opened."

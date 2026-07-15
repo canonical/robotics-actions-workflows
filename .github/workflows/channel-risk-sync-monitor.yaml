@@ -44,72 +44,58 @@ on:
         required: false
         type: number
 
+permissions:
+  contents: read
+
+concurrency:
+  group: channel-risk-monitor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   compare:
     runs-on: 'ubuntu-latest'
     permissions:
+      contents: read
       issues: write
     steps:
 
-      - name: Check snap name input
-        if: "${{ inputs.snap-name != '' }}"
-        run: echo "snap-name=${{ inputs.snap-name }}" >> "$GITHUB_OUTPUT"
-
       - name: Checkout
         if: "${{ inputs.snap-name == '' }}"
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: '${{ inputs.git-ref }}'
 
-      - name: Install dependencies
+      - name: Parse snapcraft metadata
         if: "${{ inputs.snap-name == '' }}"
-        run: sudo snap install yq
+        id: parse-metadata
+        uses: ./parse-snapcraft-metadata
+        with:
+          snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
-      - name: Find and parse snapcraft.yaml to retrieve the name
-        if: "${{ inputs.snap-name == '' }}"
-        id: parse
+      - name: Resolve snap name
+        id: snap
         env:
-          project_root: ${{ inputs.snapcraft-source-subdir }}
+          SNAP_INPUT: '${{ inputs.snap-name }}'
+          SNAP_FROM_YAML: '${{ steps.parse-metadata.outputs.snap-name }}'
         run: |
-          # If no project path is specified, default to top-level of repo
-          project_root="${project_root:-.}"
-
-          valid_paths=(
-            "${project_root}/.snapcraft.yaml"
-            "${project_root}/build-aux/snap/snapcraft.yaml"
-            "${project_root}/snap/snapcraft.yaml"
-            "${project_root}/snapcraft.yaml"
-          )
-
-          for file in "${valid_paths[@]}"; do
-            if [ -f "${file}" ]; then
-              yaml_path="${file}"
-            fi
-          done
-
-          if [ -z "${yaml_path}" ]; then
-            echo "No snapcraft.yaml found"
+          snap_name="${SNAP_INPUT:-${SNAP_FROM_YAML}}"
+          if [ -z "${snap_name}" ]; then
+            echo "Error: snap name could not be determined"
             exit 1
           fi
-
-          name="$(yq -r '.name' ${yaml_path})"
-
-          if [ -z "${name}" ]; then exit 1; fi
-
-          echo "Found snap name '${name}'."
-
-          echo "snap-name=${name}" >> "$GITHUB_OUTPUT"
+          echo "name=${snap_name}" >> "$GITHUB_OUTPUT"
 
       - name: Compare the snap revisions
         id: revision
         env:
           SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
+          SNAP_NAME: "${{ steps.snap.outputs.name }}"
         run: |
-          target_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
-          aspirant_rev=$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          target_rev=$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_TARGET_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
+          aspirant_rev=$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{gsub(/[()]/, ""); print $3}')
 
-          if (( ${aspirant_rev} > ${target_rev} )); then
+          if (( aspirant_rev > target_rev )); then
             echo "The revision on channel '${SNAP_ASPIRANT_CHANNEL}'"\
             "is newer than on channel '${SNAP_TARGET_CHANNEL}'"\
             "(${aspirant_rev} > ${target_rev})."
@@ -123,8 +109,9 @@ jobs:
         id: date
         env:
           SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+          SNAP_NAME: "${{ steps.snap.outputs.name }}"
         run: |
-          PUB_DATE="$(snap info ${{ steps.parse.outputs.snap-name }} | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{print $2}')"
+          PUB_DATE="$(snap info "${SNAP_NAME}" | yq '.channels[env(SNAP_ASPIRANT_CHANNEL)]' | awk '{print $2}')"
 
           DATE_REGEX="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
 
@@ -141,10 +128,14 @@ jobs:
       - name: Compare aspirant publication date to threshold
         if: steps.revision.outputs.is-newer == '1'
         id: compare
+        env:
+          PUB_DATE: ${{ steps.date.outputs.snap-aspirant-pub-date }}
+          THRESHOLD: ${{ inputs.threshold }}
+          SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
         run: |
 
           # Convert the dates to seconds since epoch
-          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${{ steps.date.outputs.snap-aspirant-pub-date }}" +%s)
+          SNAP_ASPIRANT_PUB_DATE_SECONDS=$(date -d "${PUB_DATE}" +%s)
           TODAY_SECONDS=$(date +%s)
 
           # Calculate the difference in days
@@ -152,10 +143,10 @@ jobs:
           DIFF_DAYS=$((DIFF_SECS / 86400))
 
           # Compare the difference in days to the threshold
-          if (( ${DIFF_DAYS} >= ${{ inputs.threshold }} )); then
-            echo "The revision published on '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}'"\
+          if (( DIFF_DAYS >= THRESHOLD )); then
+            echo "The revision published on '${SNAP_ASPIRANT_CHANNEL}'"\
             "is waiting for promotion"\
-            "(${DIFF_DAYS} > ${{ inputs.threshold }})."
+            "(${DIFF_DAYS} >= ${THRESHOLD})."
             echo "is-outdated=1" >> "$GITHUB_OUTPUT"
           else
             echo "is-outdated=0" >> "$GITHUB_OUTPUT"
@@ -167,31 +158,37 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SNAP_TARGET_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-target }}"
           SNAP_ASPIRANT_CHANNEL: "${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }}"
+          ISSUE_ASSIGNEE: ${{ inputs.issue-assignee }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          THRESHOLD: ${{ inputs.threshold }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          search_issue="$(gh issue --repo ${{ github.repository }} list --state open \
-            --search '${{ inputs.snap-track }}/${{ inputs.snap-risk-aspirant }} in:title' --json number)"
+          search_issue="$(gh issue --repo "${REPO}" list --state open \
+            --search "${SNAP_ASPIRANT_CHANNEL} in:title" --json number)"
 
           if [[ ! "${search_issue}" =~ "number" ]]; then
 
             echo "Creating a new issue."
 
-            extra_args=""
-            if [ ! -z "${{ inputs.issue-assignee }}" ]; then
-              extra_args="${extra_args} --assignee ${{ inputs.issue-assignee }}"
+            extra_args=()
+            if [ -n "${ISSUE_ASSIGNEE}" ]; then
+              extra_args+=(--assignee "${ISSUE_ASSIGNEE}")
             fi
 
             echo -e "## Monitoring report\n\n" \
-            "- Author: @${{ github.triggering_actor }}\n" \
+            "- Author: @${TRIGGERING_ACTOR}\n" \
             "- Target channel: '${SNAP_TARGET_CHANNEL}'\n" \
             "- Aspirant channel: '${SNAP_ASPIRANT_CHANNEL}'\n" \
-            "- Workflow Path: '${{ github.workflow_ref }}'\n\n" \
-            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${{ inputs.threshold }} days'.\n" \
+            "- Workflow Path: '${WORKFLOW_REF}'\n\n" \
+            "The snap revision on channel '${SNAP_ASPIRANT_CHANNEL}' has been pending for more than ${THRESHOLD} days.\n" \
             "Please consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'.\n\n" \
-            "Workflow details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "Workflow details at: https://github.com/${REPO}/actions/runs/${RUN_ID}" \
             | \
-            gh issue --repo ${{ github.repository }} create \
+            gh issue --repo "${REPO}" create \
               --title "[CI] Consider promoting '${SNAP_ASPIRANT_CHANNEL}' to '${SNAP_TARGET_CHANNEL}'." \
-              ${extra_args} \
+              "${extra_args[@]}" \
               --body-file -
           else
             echo "Issue already opened."

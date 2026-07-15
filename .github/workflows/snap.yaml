@@ -69,6 +69,13 @@ on:
         description: Snap Store credential (see 'snapcraft export-login').
         required: false
 
+permissions:
+  contents: read
+
+concurrency:
+  group: snap-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     uses: ./.github/workflows/build.yaml
@@ -92,6 +99,7 @@ jobs:
 
   check-snapstore-login:
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       defined: ${{ steps.check.outputs.defined }}
     steps:
@@ -101,9 +109,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ secrets.snapstore-login }}" != '' ]; then
-            echo "defined=true" >> $GITHUB_OUTPUT;
+            echo "defined=true" >> "$GITHUB_OUTPUT";
           else
-            echo "defined=false" >> $GITHUB_OUTPUT;
+            echo "defined=false" >> "$GITHUB_OUTPUT";
           fi
 
   publish:
@@ -121,9 +129,11 @@ jobs:
     if: ${{ always() && !cancelled() && needs.build.result == 'success' && inputs.cleanup == true }}
     runs-on: ubuntu-latest
     needs: [build, publish]
+    permissions:
+      actions: write
     steps:
       - name: Delete artifact
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@b54d29a59e55046d1f7fc8226cdda507e6b9cf62 # v5
         with:
           failOnError: false
           name: 'workflow-build-snap-*'
