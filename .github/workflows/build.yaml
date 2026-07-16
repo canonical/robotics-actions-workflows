@@ -49,7 +49,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: ./string-to-json
+        uses: canonical/robotics-actions-workflows/string-to-json@main
         with:
           string: ${{ inputs.runs-on }}
 
@@ -60,7 +60,7 @@ jobs:
     steps:
       - name: String to JSON list
         id: string-to-json
-        uses: ./string-to-json
+        uses: canonical/robotics-actions-workflows/string-to-json@main
         with:
           string: ${{ inputs.snapcraft-source-subdir }}
 

@@ -44,9 +44,6 @@ on:
         required: false
         type: number
 
-permissions:
-  contents: read
-
 concurrency:
   group: channel-risk-monitor-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -68,7 +65,7 @@ jobs:
       - name: Parse snapcraft metadata
         if: "${{ inputs.snap-name == '' }}"
         id: parse-metadata
-        uses: ./parse-snapcraft-metadata
+        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
         with:
           snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 

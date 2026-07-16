@@ -27,9 +27,6 @@ on:
         required: false
         type: string
 
-permissions:
-  contents: read
-
 concurrency:
   group: upstream-monitor-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -49,7 +46,7 @@ jobs:
 
       - name: Parse snapcraft metadata
         id: parse
-        uses: ./parse-snapcraft-metadata
+        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
         with:
           snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 

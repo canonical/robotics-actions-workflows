@@ -23,9 +23,6 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-
 concurrency:
   group: gh-tag-monitor-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false

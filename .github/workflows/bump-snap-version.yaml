@@ -34,9 +34,6 @@ on:
         required: false
         type: string
 
-permissions:
-  contents: read
-
 concurrency:
   group: bump-snap-version-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -166,7 +163,7 @@ jobs:
       - name: Parse snapcraft metadata
         if: steps.find-issue.outputs.version != '' && steps.check-existing-pr.outputs.skip != 'true'
         id: parse
-        uses: ./parse-snapcraft-metadata
+        uses: canonical/robotics-actions-workflows/parse-snapcraft-metadata@main
         with:
           snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
 
