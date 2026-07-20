@@ -80,7 +80,7 @@ jobs:
           ref: '${{ inputs.git-ref }}'
 
       - name: Build snap
-        uses: canonical/action-build@ea14cdeb353272f75977040488ca191880509a8c # v1.1.0
+        uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1.3.0
         id: build-snap
         env:
           SNAPCRAFT_BUILD_INFO: 1
