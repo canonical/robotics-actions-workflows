@@ -112,3 +112,21 @@ jobs:
           path: '${{ steps.build-snap.outputs.snap }}'
           retention-days: 10
           if-no-files-found: error
+
+      - name: Build summary
+        env:
+          SNAP_PATH: '${{ steps.build-snap.outputs.snap }}'
+          ARTIFACT_NAME: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
+          RUNS_ON: '${{ matrix.runs-on }}'
+          SOURCE_SUBDIR: '${{ matrix.source-subdir }}'
+        run: |
+          {
+            echo "### 📦 Snap built"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Snap file | \`$(basename "${SNAP_PATH}")\` |"
+            echo "| Artifact | \`${ARTIFACT_NAME}\` |"
+            echo "| Runner | \`${RUNS_ON}\` |"
+            echo "| Source subdir | \`${SOURCE_SUBDIR}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

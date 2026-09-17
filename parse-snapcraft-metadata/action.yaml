@@ -56,7 +56,10 @@ runs:
         done
 
         if [[ -z "${yaml_path}" ]]; then
-          echo "No snapcraft.yaml found in '${project_root}'"
+          echo "Error: no snapcraft.yaml found for project root '${project_root}'." >&2
+          echo "Searched the following locations:" >&2
+          printf '  - %s\n' "${valid_paths[@]}" >&2
+          echo "If your snap project lives elsewhere, set the 'snapcraft-source-subdir' input (e.g. snapcraft-source-subdir: 'my/path')." >&2
           exit 1
         fi
 
@@ -65,7 +68,8 @@ runs:
 
         snap_name="$(yq -r '.name' "${yaml_path}")"
         if [[ -z "${snap_name}" || "${snap_name}" == "null" ]]; then
-          echo "Error: could not parse snap name from '${yaml_path}'"
+          echo "Error: could not parse the snap name from '${yaml_path}'." >&2
+          echo "Make sure the file defines a top-level 'name:' field." >&2
           exit 1
         fi
         echo "snap-name=${snap_name}" >> "$GITHUB_OUTPUT"

@@ -108,6 +108,12 @@ jobs:
 
           echo "snap-channel=${SNAP_CHANNEL}" >> "$GITHUB_OUTPUT"
 
+          {
+            echo "### 🚀 Resolved release channel"
+            echo ""
+            echo "Snaps will be published to \`${SNAP_CHANNEL}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish snap
         uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40 # v1.2.0
         env:
@@ -115,3 +121,17 @@ jobs:
         with:
           snap: ${{ matrix.snap }}
           release: ${{ steps.set-snap-channel.outputs.snap-channel }}
+
+      - name: Publish summary
+        env:
+          SNAP_FILE: '${{ matrix.snap }}'
+          SNAP_CHANNEL: '${{ steps.set-snap-channel.outputs.snap-channel }}'
+        run: |
+          {
+            echo "### ✅ Snap published"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Snap | \`$(basename "${SNAP_FILE}")\` |"
+            echo "| Channel | \`${SNAP_CHANNEL}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
