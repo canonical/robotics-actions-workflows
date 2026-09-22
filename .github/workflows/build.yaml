@@ -13,11 +13,6 @@ on:
         description: The runner(s) to use.
         required: false
         type: string
-      snapcraft-args:
-        default: ''
-        description: The arguments to pass to snapcraft (pack).
-        required: false
-        type: string
       snapcraft-channel:
         default: 'latest/stable'
         description: The channel from which to install Snapcraft.
@@ -80,15 +75,14 @@ jobs:
           ref: '${{ inputs.git-ref }}'
 
       - name: Build snap
-        uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1.3.0
+        uses: canonical/craft-actions/snapcraft/pack@acd2f2e61c7563b38ba89390ca0e910fa7d2784f # v0.1.1
         id: build-snap
         env:
           SNAPCRAFT_BUILD_INFO: 1
           SNAPCRAFT_ENABLE_EXPERIMENTAL_EXTENSIONS: '${{ inputs.snapcraft-enable-experimental-extensions }}'
         with:
           path: '${{ matrix.source-subdir }}'
-          snapcraft-channel: '${{ inputs.snapcraft-channel }}'
-          snapcraft-args: '${{ inputs.snapcraft-args }}'
+          channel: '${{ inputs.snapcraft-channel }}'
 
       - name: Find out the branch name
         id: get-branch
