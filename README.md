@@ -7,24 +7,52 @@ They implement an opinionated workflow to build, test & release snaps.
 
 ## Quick start
 
-Here is an example of setting up a workflow:
+For a new snap repository, copy the following workflow to
+`.github/workflows/snap.yaml` in your project:
 
 ```yaml
+name: snap
+
 on:
   push:
-    branches:
-      - main
+    branches: [main]  # build, test and publish to latest/edge
+    tags: ['v*']      # build, test and publish to latest/candidate
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [main]  # build and test only (never publishes)
+  workflow_dispatch:  # manual trigger
+
+permissions:
+  contents: read
 
 jobs:
   snap:
     uses: canonical/robotics-actions-workflows/.github/workflows/snap.yaml@main
-      secrets:
-        snapstore-login: ${{ secrets.SNAPSTORE_LOGIN }}
+    secrets:
+      snapstore-login: ${{ secrets.SNAPSTORE_LOGIN }}
 ```
+
+Then store your Snap Store credentials as the `SNAPSTORE_LOGIN` repository
+secret, e.g. `snapcraft export-login --snaps <your-snap> --channels edge,candidate -`.
+
+## Behavior worth knowing
+
+- **Publishing is skipped without the `snapstore-login` secret.**
+  On pull requests from forks, GitHub does not expose secrets to the workflow,
+  so the snap is only built and tested.
+  The same happens if the secret is not configured: the run still succeeds,
+  but a workflow warning and a note in the job summary tell you that
+  publishing was skipped.
+- **Publishing only runs on `push`, `workflow_dispatch` and `schedule`
+  events.** Pull requests never publish.
+- **The risk channel is resolved as follows, in increasing precedence:**
+  1. `edge` by default,
+  2. `candidate` when the workflow runs on a tag (`refs/tags/*`),
+  3. the value of `snap-risk`, when explicitly set.
+- **Build artifacts are named** `workflow-build-snap-<snap-file>-<branch>`
+  (with `/` and `-` in the branch name replaced by `_`) and are retained for
+  10 days by default.
+  The `test` and `publish` workflows locate the snaps through this prefix,
+  so keep it in mind when combining these workflows with your own jobs.
 
 ## Examples
 

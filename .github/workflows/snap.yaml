@@ -112,6 +112,15 @@ jobs:
             echo "defined=true" >> "$GITHUB_OUTPUT";
           else
             echo "defined=false" >> "$GITHUB_OUTPUT";
+            echo "::warning::The 'snapstore-login' secret is not set. The snap will be built and tested, but publishing to the Snap Store will be skipped."
+            {
+              echo "## ⚠️ Publishing skipped"
+              echo ""
+              echo "The \`snapstore-login\` secret is not set, so the snap will **not** be published to the Snap Store."
+              echo ""
+              echo "This is expected on pull requests from forks, where secrets are not exposed to the workflow."
+              echo "To enable publishing, export store credentials (\`snapcraft export-login\`), store them as a repository secret and pass it as the \`snapstore-login\` secret to this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   publish:
