@@ -144,7 +144,6 @@ For further configurations, see each sub-workflow details below.
 | `snap-test-script` | ' ' | A test script to run against the snap. | false |
 | `snap-risk` | edge | Snap Store channel risk use for publication. | false |
 | `snap-track` | latest | Snap Store channel track use for publication. | false |
-| `snapcraft-args` | ' ' | The arguments to pass to snapcraft (pack). | false |
 | `snapcraft-channel` | latest/stable | The channel from which to install Snapcraft. | false |
 | `snapcraft-enable-experimental-extensions` | false | Whether to enable Snapcraft experimental extensions or not. | false |
 | `snapcraft-source-subdir` | ' . ' | The path where to execute snapcraft. | false |
@@ -160,7 +159,7 @@ For further configurations, see each sub-workflow details below.
 The [build](.github/workflows/build.yaml) workflow,
 as its name suggests,
 builds the snap.
-It does so using the [canonical/action-build](https://github.com/canonical/action-build) and the snap project it finds at the repository root.
+It does so using the [canonical/craft-actions](https://github.com/canonical/craft-actions) `snapcraft/pack` action and the snap project it finds at the repository root.
 
 Caller may specify one, or several,
 sub-folders to build the snap(s) from using the `snapcraft-source-subdir` option (e.g. `snapcraft-source-subdir: 'my-path'` or `snapcraft-source-subdir: '["bar", "foo"]'`).
@@ -175,7 +174,6 @@ The `build` uses the following subset of options from the `snap` workflow:
 
 - `git-ref`
 - `runs-on`
-- `snapcraft-args`
 - `snapcraft-channel`
 - `snapcraft-enable-experimental-extensions`
 - `snapcraft-source-subdir`
