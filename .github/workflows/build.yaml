@@ -117,7 +117,7 @@ jobs:
         env:
           SNAP_PATH: '${{ steps.build-snap.outputs.snap }}'
           ARTIFACT_NAME: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
-          RUNS_ON: '${{ matrix.runs-on }}'
+          RUNS_ON: '${{ toJson(matrix.runs-on) }}'
           SOURCE_SUBDIR: '${{ matrix.source-subdir }}'
         run: |
           {
