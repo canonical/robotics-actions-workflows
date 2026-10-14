@@ -1,0 +1,128 @@
+name: tutorial-test
+
+on:
+  workflow_call:
+    inputs:
+      tutorial-path:
+        description: Path to the tutorial, relative to the caller repository.
+        required: true
+        type: string
+      skill-path:
+        description: Path to the tutorial's SKILL.md, relative to the caller repository.
+        required: true
+        type: string
+      runs-on:
+        default: ubuntu-latest
+        description: The Ubuntu runner image to test on.
+        required: false
+        type: string
+      model:
+        default: openrouter/moonshotai/kimi-k3
+        description: Model used to drive the tutorial tester, in provider/model form.
+        required: false
+        type: string
+      git-ref:
+        default: ${{ github.ref }}
+        description: The caller repository ref to test.
+        required: false
+        type: string
+      timeout-minutes:
+        default: 60
+        description: Maximum duration of the tutorial-test job.
+        required: false
+        type: number
+      issue-labels:
+        default: tutorial-test
+        description: Comma-separated labels to apply to created issues.
+        required: false
+        type: string
+    outputs:
+      result:
+        description: The final tutorial-test result (pass, warn, or fail).
+        value: ${{ jobs.tutorial-test.outputs.result }}
+      issue-url:
+        description: The URL of the issue created for a warn or fail result.
+        value: ${{ jobs.tutorial-test.outputs.issue-url }}
+    secrets:
+      openrouter-api-key:
+        description: OpenRouter API key used by the AI tutorial tester.
+        required: true
+
+concurrency:
+  group: tutorial-test-${{ github.workflow }}-${{ github.ref }}-${{ inputs.tutorial-path }}
+  cancel-in-progress: false
+
+jobs:
+  tutorial-test:
+    name: Test tutorial
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      result: ${{ steps.report.outputs.RESULT }}
+      issue-url: ${{ steps.report.outputs.ISSUE_URL }}
+    env:
+      TUTORIAL_PATH: ${{ inputs.tutorial-path }}
+      SKILL_PATH: ${{ inputs.skill-path }}
+      OPENCODE_MODEL: ${{ inputs.model }}
+      ISSUE_LABELS: ${{ inputs.issue-labels }}
+
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.git-ref }}
+          path: caller-repo
+          persist-credentials: false
+
+      - name: Checkout tutorial tester
+        uses: actions/checkout@v7
+        with:
+          repository: canonical/robotics-actions-workflows
+          ref: feat/tutorial-test-with-ai # todo: replace with main when about the merge
+          path: tutorial-tester
+          sparse-checkout: tutorial-test
+          persist-credentials: false
+
+      - name: Set up LXD
+        uses: canonical/setup-lxd@v1
+        with:
+          channel: latest/stable
+
+      - name: Run the tutorial with an AI agent
+        id: test
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.openrouter-api-key }}
+          CALLER_REPO_DIR: ${{ github.workspace }}/caller-repo
+          SHARED_TEST_DIR: ${{ github.workspace }}/tutorial-tester/tutorial-test
+          RUN_DIR: ${{ runner.temp }}/tutorial-test-run
+          TRANSCRIPT_FILE: ${{ runner.temp }}/tutorial-test/transcript.log
+          REPORT_FILE: ${{ runner.temp }}/tutorial-test/report.md
+          ENV_FILE: ${{ runner.temp }}/tutorial-test/environment.txt
+        run: "${{ github.workspace }}/tutorial-tester/tutorial-test/run-tutorial-test.sh"
+        # Tutorial findings are reported through the summary, artifacts, and an
+        # issue; they should not make the monitoring job itself red.
+        continue-on-error: true
+
+      - name: Publish report and open an issue on failure
+        id: report
+        if: always()
+        env:
+          RESULT: ${{ steps.test.outputs.RESULT || 'fail' }}
+          REPORT_FILE: ${{ steps.test.outputs.REPORT_FILE || format('{0}/tutorial-test/report.md', runner.temp) }}
+          ENV_FILE: ${{ steps.test.outputs.ENV_FILE || format('{0}/tutorial-test/environment.txt', runner.temp) }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: "${{ github.workspace }}/tutorial-tester/tutorial-test/report-to-issue.sh"
+
+      - name: Upload tutorial-test artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tutorial-test-${{ github.run_id }}
+          path: |
+            ${{ steps.test.outputs.REPORT_FILE || format('{0}/tutorial-test/report.md', runner.temp) }}
+            ${{ steps.test.outputs.ENV_FILE || format('{0}/tutorial-test/environment.txt', runner.temp) }}
+            ${{ steps.test.outputs.TRANSCRIPT_FILE || format('{0}/tutorial-test/transcript.log', runner.temp) }}
+          if-no-files-found: warn

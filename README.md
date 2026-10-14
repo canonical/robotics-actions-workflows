@@ -92,6 +92,7 @@ The reusable workflows are:
 - [upstream-gh-tag-monitor.yaml](.github/workflows/upstream-gh-tag-monitor.yaml) - the workflow to monitor new tag on an upstream repository.
 - [bump-snap-version.yaml](.github/workflows/bump-snap-version.yaml) - the workflow to automate snap version bump PRs.
 - [channel-risk-sync-monitor.yaml](.github/workflows/channel-risk-sync-monitor.yaml) - the workflow to monitor the promotion from a channel risk to another.
+- [tutorial-test.yaml](.github/workflows/tutorial-test.yaml) - the workflow to test a documentation tutorial with an AI agent and report findings as issues.
 
 ### General notes
 
@@ -349,6 +350,111 @@ it opens an issue.
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
 | `threshold` | '10' | The threshold to trigger the issue (in days). | false |
 
+### The tutorial-test workflow
+
+The [tutorial-test](.github/workflows/tutorial-test.yaml) workflow tests a documentation tutorial with an AI agent.
+The agent follows the tutorial commands in order, writes a structured Markdown report, and the workflow opens an issue when the tutorial is broken or when it produces feedback worth acting on.
+
+The workflow is generic: tutorial-specific audience assumptions, environment setup, and known-acceptable deviations live in a skill file owned by the caller repository.
+Each invocation tests one tutorial.
+To test several tutorials, invoke the reusable workflow once per tutorial (for example with a caller-side matrix).
+
+The caller owns the tutorial, its skill, the schedule, and the model credentials.
+The reusable workflow installs [OpenCode](https://opencode.ai) from the snap, sets up LXD with [canonical/setup-lxd](https://github.com/canonical/setup-lxd), and publishes the transcript, final report, and environment details as artifacts.
+
+> [!WARNING]
+> The AI agent has shell and administrator access on the disposable GitHub-hosted runner.
+> This reduces accidental credential exposure, but it is not a security sandbox.
+> Only test trusted tutorials and skills, and only use repository contents and tutorial commands you are comfortable running with the forwarded OpenRouter secret.
+
+#### Quick start
+
+In the consuming repository, add a tutorial skill such as
+`.github/tutorial-test/skills/my-tutorial/SKILL.md`, then create a caller workflow:
+
+```yaml
+name: tutorial-test
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+# Restrictive default for the whole workflow.
+permissions: {}
+
+jobs:
+  my-tutorial:
+    permissions:
+      contents: read
+      issues: write
+    uses: canonical/robotics-actions-workflows/.github/workflows/tutorial-test.yaml@main
+    with:
+      tutorial-path: docs/tutorials/my-tutorial.md
+      skill-path: .github/tutorial-test/skills/my-tutorial/SKILL.md
+    secrets:
+      openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
+```
+
+Store the OpenRouter API key as the `OPENROUTER_API_KEY` repository secret.
+
+#### Tutorial results
+
+- **PASS**: the tutorial completed and the report contains no actionable feedback. No issue is opened.
+- **WARN**: the tutorial completed but the report contains findings or suggested changes. A `Tutorial test feedback: <tutorial>` issue is opened.
+- **FAIL**: the tutorial is broken or blocked, or the tester failed to produce a valid report. A `Tutorial test failing: <tutorial>` issue is opened.
+
+A `PASS` report whose `## Suggested changes` section is not `None.` is promoted to `WARN`, so useful feedback is not lost when the model under-reports it.
+Issue creation is deliberately not deduplicated; close the issue after addressing or recording the behaviour in the tutorial skill.
+
+#### Options
+
+| Option | Default Value | Description | Required |
+|---|---|---|---|
+| `tutorial-path` | — | Path to the tutorial, relative to the caller repository. | true |
+| `skill-path` | — | Path to the tutorial's `SKILL.md`, relative to the caller repository. | true |
+| `runs-on` | `ubuntu-latest` | The Ubuntu runner image to test on. | false |
+| `model` | `openrouter/moonshotai/kimi-k3` | Model used to drive the tester, in `provider/model` form. | false |
+| `git-ref` | `${{ github.ref }}` | The caller repository ref to test. | false |
+| `timeout-minutes` | `60` | Maximum duration of the tutorial-test job. | false |
+| `issue-labels` | `tutorial-test` | Comma-separated labels to apply to created issues. | false |
+
+#### Secrets
+
+| Secret | Description | Required |
+|---|---|---|
+| `openrouter-api-key` | OpenRouter API key used by the AI tutorial tester. | true |
+
+#### Outputs
+
+| Output | Description |
+|---|---|
+| `result` | The final tutorial-test result: `pass`, `warn`, or `fail`. |
+| `issue-url` | The URL of the issue created for a `warn` or `fail` result. Empty when no issue was created. |
+
+#### Tutorial skills
+
+A tutorial skill is a Markdown file with YAML frontmatter.
+Use it to describe the intended reader, prerequisites the tester may install, and expected deviations that must not be reported:
+
+```markdown
+---
+name: my-tutorial
+description: Testing knowledge for the my-tutorial documentation tutorial.
+---
+
+## Intended audience
+
+The tutorial assumes basic ROS 2 knowledge but no snap experience.
+
+## Known deviations
+
+- The command prints a deprecation warning on newer releases; this is expected.
+```
+
+Keep skills factual and scoped to one tutorial.
+Do not place credentials in a skill.
+
 ### Permissions
 
 Each reusable workflow follows the principle of least privilege:
@@ -385,6 +491,7 @@ The permissions required by each workflow are:
 | [upstream-gh-tag-monitor.yaml](.github/workflows/upstream-gh-tag-monitor.yaml) | read | write | — | — |
 | [channel-risk-sync-monitor.yaml](.github/workflows/channel-risk-sync-monitor.yaml) | read | write | — | — |
 | [bump-snap-version.yaml](.github/workflows/bump-snap-version.yaml) | write | read | write | — |
+| [tutorial-test.yaml](.github/workflows/tutorial-test.yaml) | read | write | — | — |
 
 ¹ `actions: write` is only required when the `cleanup` option is enabled
 (it lets the workflow delete the build artifacts via the `delete-artifact` action).
