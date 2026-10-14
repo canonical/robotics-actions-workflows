@@ -1,0 +1,86 @@
+name: Tutorial test
+description: >-
+  Test a documentation tutorial with an AI agent. The agent follows the
+  tutorial's commands in order on the runner and writes a structured report.
+  Publishes the report, environment details, and execution transcript as
+  artifacts, and opens a GitHub issue when the result is warn or fail.
+  Environment preparation (for example LXD) is the caller's responsibility.
+
+inputs:
+  tutorial-path:
+    description: Path to the tutorial, relative to the checked-out caller repository.
+    required: true
+  skill-path:
+    description: Path to the tutorial's SKILL.md, relative to the checked-out caller repository.
+    required: true
+  model:
+    default: openrouter/moonshotai/kimi-k3
+    description: Model used to drive the tutorial tester, in provider/model form.
+    required: false
+  issue-labels:
+    default: tutorial-test
+    description: Comma-separated labels to apply to created issues.
+    required: false
+  openrouter-api-key:
+    description: OpenRouter API key used by the AI tutorial tester.
+    required: true
+  github-token:
+    description: >-
+      Token used to open issues. Pass secrets.GITHUB_TOKEN. The calling job
+      needs issues: write.
+    required: true
+
+outputs:
+  result:
+    description: The final tutorial-test result (pass, warn, or fail).
+    value: ${{ steps.report.outputs.RESULT }}
+  issue-url:
+    description: The URL of the issue created for a warn or fail result.
+    value: ${{ steps.report.outputs.ISSUE_URL }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run the tutorial with an AI agent
+      id: test
+      shell: bash
+      env:
+        OPENROUTER_API_KEY: ${{ inputs.openrouter-api-key }}
+        OPENCODE_MODEL: ${{ inputs.model }}
+        CALLER_REPO_DIR: ${{ github.workspace }}
+        SHARED_TEST_DIR: ${{ github.action_path }}
+        RUN_DIR: ${{ runner.temp }}/tutorial-test-run
+        TRANSCRIPT_FILE: ${{ runner.temp }}/tutorial-test/transcript.log
+        REPORT_FILE: ${{ runner.temp }}/tutorial-test/report.md
+        ENV_FILE: ${{ runner.temp }}/tutorial-test/environment.txt
+        TUTORIAL_PATH: ${{ inputs.tutorial-path }}
+        SKILL_PATH: ${{ inputs.skill-path }}
+      run: "${{ github.action_path }}/run-tutorial-test.sh"
+      # Tutorial findings are reported through the summary, artifacts, and an
+      # issue; they should not make the caller's job red.
+      continue-on-error: true
+
+    - name: Publish report and open an issue on failure
+      id: report
+      if: always()
+      shell: bash
+      env:
+        RESULT: ${{ steps.test.outputs.RESULT || 'fail' }}
+        REPORT_FILE: ${{ steps.test.outputs.REPORT_FILE || format('{0}/tutorial-test/report.md', runner.temp) }}
+        ENV_FILE: ${{ steps.test.outputs.ENV_FILE || format('{0}/tutorial-test/environment.txt', runner.temp) }}
+        TUTORIAL_PATH: ${{ inputs.tutorial-path }}
+        OPENCODE_MODEL: ${{ inputs.model }}
+        ISSUE_LABELS: ${{ inputs.issue-labels }}
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: "${{ github.action_path }}/report-to-issue.sh"
+
+    - name: Upload tutorial-test artifacts
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: tutorial-test-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ steps.test.outputs.REPORT_FILE || format('{0}/tutorial-test/report.md', runner.temp) }}
+          ${{ steps.test.outputs.ENV_FILE || format('{0}/tutorial-test/environment.txt', runner.temp) }}
+          ${{ steps.test.outputs.TRANSCRIPT_FILE || format('{0}/tutorial-test/transcript.log', runner.temp) }}
+        if-no-files-found: warn

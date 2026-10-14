@@ -93,6 +93,7 @@ The reusable workflows are:
 - [bump-snap-version.yaml](.github/workflows/bump-snap-version.yaml) - the workflow to automate snap version bump PRs.
 - [channel-risk-sync-monitor.yaml](.github/workflows/channel-risk-sync-monitor.yaml) - the workflow to monitor the promotion from a channel risk to another.
 - [tutorial-test.yaml](.github/workflows/tutorial-test.yaml) - the workflow to test a documentation tutorial with an AI agent and report findings as issues.
+- [tutorial-test/action.yaml](tutorial-test/action.yaml) - the composite action backing the tutorial-test workflow, for callers that manage their own job and environment.
 
 ### General notes
 
@@ -355,12 +356,20 @@ it opens an issue.
 The [tutorial-test](.github/workflows/tutorial-test.yaml) workflow tests a documentation tutorial with an AI agent.
 The agent follows the tutorial commands in order, writes a structured Markdown report, and the workflow opens an issue when the tutorial is broken or when it produces feedback worth acting on.
 
-The workflow is generic: tutorial-specific audience assumptions, environment setup, and known-acceptable deviations live in a skill file owned by the caller repository.
+The engine is generic: tutorial-specific audience assumptions and known-acceptable deviations live in a skill file owned by the caller repository.
 Each invocation tests one tutorial.
-To test several tutorials, invoke the reusable workflow once per tutorial (for example with a caller-side matrix).
+To test several tutorials, invoke the workflow or action once per tutorial (for example with a caller-side matrix).
 
 The caller owns the tutorial, its skill, the schedule, and the model credentials.
-The reusable workflow installs [OpenCode](https://opencode.ai) from the snap, sets up LXD with [canonical/setup-lxd](https://github.com/canonical/setup-lxd), and publishes the transcript, final report, and environment details as artifacts.
+The engine installs [OpenCode](https://opencode.ai) from the snap and publishes the transcript, final report, and environment details as artifacts.
+
+Two interfaces are available:
+
+- **The reusable workflow** ([tutorial-test.yaml](.github/workflows/tutorial-test.yaml)) is the simplest option.
+  It checks out the caller repository and sets up LXD with [canonical/setup-lxd](https://github.com/canonical/setup-lxd) before testing, so it suits LXD-based tutorials out of the box.
+- **The composite action** ([tutorial-test/action.yaml](tutorial-test/action.yaml)) runs as a step inside your own job.
+  It performs **no environment setup** — the caller checks out the repository and runs any preparation (for example `setup-lxd`) as ordinary steps before invoking it.
+  Use it when you need a different environment or extra steps around the test.
 
 > [!WARNING]
 > The AI agent has shell and administrator access on the disposable GitHub-hosted runner.
@@ -398,6 +407,41 @@ jobs:
 
 Store the OpenRouter API key as the `OPENROUTER_API_KEY` repository secret.
 
+#### Composite action
+
+For full control over the job and environment, call the composite action as a step.
+Check out your repository and run any environment setup yourself first:
+
+```yaml
+jobs:
+  tutorial-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Optional: set up whatever the tutorial needs.
+      - uses: canonical/setup-lxd@v1
+        with:
+          channel: latest/stable
+
+      - name: Test tutorial
+        uses: canonical/robotics-actions-workflows/tutorial-test@main
+        with:
+          tutorial-path: docs/tutorials/my-tutorial.md
+          skill-path: .github/tutorial-test/skills/my-tutorial/SKILL.md
+          openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+The action performs no environment setup of its own.
+
 #### Tutorial results
 
 - **PASS**: the tutorial completed and the report contains no actionable feedback. No issue is opened.
@@ -424,6 +468,22 @@ Issue creation is deliberately not deduplicated; close the issue after addressin
 | Secret | Description | Required |
 |---|---|---|
 | `openrouter-api-key` | OpenRouter API key used by the AI tutorial tester. | true |
+
+#### Composite action inputs
+
+The composite action shares `tutorial-path`, `skill-path`, `model`, and `issue-labels` with the workflow.
+It replaces the credential secret with explicit inputs and leaves runner, timeout, checkout, and environment to the caller's job:
+
+| Input | Default Value | Description | Required |
+|---|---|---|---|
+| `tutorial-path` | — | Path to the tutorial, relative to the checked-out repository. | true |
+| `skill-path` | — | Path to the tutorial's `SKILL.md`, relative to the checked-out repository. | true |
+| `model` | `openrouter/moonshotai/kimi-k3` | Model used to drive the tester, in `provider/model` form. | false |
+| `issue-labels` | `tutorial-test` | Comma-separated labels to apply to created issues. | false |
+| `openrouter-api-key` | — | OpenRouter API key used by the AI tutorial tester. | true |
+| `github-token` | — | Token used to open issues (pass `secrets.GITHUB_TOKEN`). The job needs `issues: write`. | true |
+
+The action's outputs are `result` and `issue-url`, matching the workflow outputs.
 
 #### Outputs
 

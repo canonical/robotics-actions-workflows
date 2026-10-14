@@ -61,68 +61,32 @@ jobs:
       contents: read
       issues: write
     outputs:
-      result: ${{ steps.report.outputs.RESULT }}
-      issue-url: ${{ steps.report.outputs.ISSUE_URL }}
-    env:
-      TUTORIAL_PATH: ${{ inputs.tutorial-path }}
-      SKILL_PATH: ${{ inputs.skill-path }}
-      OPENCODE_MODEL: ${{ inputs.model }}
-      ISSUE_LABELS: ${{ inputs.issue-labels }}
+      result: ${{ steps.test.outputs.result }}
+      issue-url: ${{ steps.test.outputs.issue-url }}
 
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.git-ref }}
-          path: caller-repo
           persist-credentials: false
 
-      - name: Checkout tutorial tester
-        uses: actions/checkout@v7
-        with:
-          repository: canonical/robotics-actions-workflows
-          ref: feat/tutorial-test-with-ai # todo: replace with main when about the merge
-          path: tutorial-tester
-          sparse-checkout: tutorial-test
-          persist-credentials: false
-
+      # LXD setup is provided here for tutorials that need it. Callers that
+      # require a different environment should call the composite action
+      # directly and run their own setup steps before it.
       - name: Set up LXD
         uses: canonical/setup-lxd@v1
         with:
           channel: latest/stable
 
-      - name: Run the tutorial with an AI agent
+      - name: Test tutorial
         id: test
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.openrouter-api-key }}
-          CALLER_REPO_DIR: ${{ github.workspace }}/caller-repo
-          SHARED_TEST_DIR: ${{ github.workspace }}/tutorial-tester/tutorial-test
-          RUN_DIR: ${{ runner.temp }}/tutorial-test-run
-          TRANSCRIPT_FILE: ${{ runner.temp }}/tutorial-test/transcript.log
-          REPORT_FILE: ${{ runner.temp }}/tutorial-test/report.md
-          ENV_FILE: ${{ runner.temp }}/tutorial-test/environment.txt
-        run: "${{ github.workspace }}/tutorial-tester/tutorial-test/run-tutorial-test.sh"
-        # Tutorial findings are reported through the summary, artifacts, and an
-        # issue; they should not make the monitoring job itself red.
-        continue-on-error: true
-
-      - name: Publish report and open an issue on failure
-        id: report
-        if: always()
-        env:
-          RESULT: ${{ steps.test.outputs.RESULT || 'fail' }}
-          REPORT_FILE: ${{ steps.test.outputs.REPORT_FILE || format('{0}/tutorial-test/report.md', runner.temp) }}
-          ENV_FILE: ${{ steps.test.outputs.ENV_FILE || format('{0}/tutorial-test/environment.txt', runner.temp) }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: "${{ github.workspace }}/tutorial-tester/tutorial-test/report-to-issue.sh"
-
-      - name: Upload tutorial-test artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
+        # todo: use @main when merged.
+        uses: canonical/robotics-actions-workflows/tutorial-test@feat/tutorial-test-with-ai
         with:
-          name: tutorial-test-${{ github.run_id }}
-          path: |
-            ${{ steps.test.outputs.REPORT_FILE || format('{0}/tutorial-test/report.md', runner.temp) }}
-            ${{ steps.test.outputs.ENV_FILE || format('{0}/tutorial-test/environment.txt', runner.temp) }}
-            ${{ steps.test.outputs.TRANSCRIPT_FILE || format('{0}/tutorial-test/transcript.log', runner.temp) }}
-          if-no-files-found: warn
+          tutorial-path: ${{ inputs.tutorial-path }}
+          skill-path: ${{ inputs.skill-path }}
+          model: ${{ inputs.model }}
+          issue-labels: ${{ inputs.issue-labels }}
+          openrouter-api-key: ${{ secrets.openrouter-api-key }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
