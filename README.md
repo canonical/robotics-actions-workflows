@@ -139,6 +139,7 @@ For further configurations, see each sub-workflow details below.
 | `cleanup` | false | Whether to cleanup the artifacts. | false |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 | `lxd-image` | ' ' | The LXD image to run this action in. | false |
+| `preliminary-script` | ' ' | A Bash script to run from the repository root after checkout and before each snap build. | false |
 | `runs-on` | ubuntu-latest | The runner(s) to use. | false |
 | `snap-install-args` | --dangerous | The argument to pass to snap install. | false |
 | `snap-test-script` | ' ' | A test script to run against the snap. | false |
@@ -174,11 +175,39 @@ The resulting snap(s) is then uploaded as an artifact prefixed with `workflow-bu
 The `build` uses the following subset of options from the `snap` workflow:
 
 - `git-ref`
+- `preliminary-script`
 - `runs-on`
 - `snapcraft-args`
 - `snapcraft-channel`
 - `snapcraft-enable-experimental-extensions`
 - `snapcraft-source-subdir`
+
+#### Preparing the snap before building
+
+Use `preliminary-script` to modify `snapcraft.yaml`, generate files, or invoke a
+checked-in preparation script before Snapcraft runs:
+
+```yaml
+jobs:
+  snap:
+    uses: canonical/robotics-actions-workflows/.github/workflows/snap.yaml@main
+    with:
+      preliminary-script: |
+        python3 scripts/prepare-snapcraft.py
+```
+
+The same input is available when calling the `build` workflow directly. The script
+runs with Bash on the build runner, from the checked-out repository root, once per
+runner and source-directory matrix entry. `SNAPCRAFT_SOURCE_SUBDIR` contains the
+current entry's project directory; for example, use
+`"${SNAPCRAFT_SOURCE_SUBDIR}/snap/snapcraft.yaml"` for a project with its recipe in
+`snap/snapcraft.yaml`.
+
+An empty input skips the step. A failed command or pipeline fails the build before
+Snapcraft runs. Files changed by the script are available to the build but are not
+committed back or copied to the separate test and publish jobs. The hook runs before
+the build action installs Snapcraft, so it must not assume Snapcraft is installed.
+Only pass trusted script content; do not interpolate untrusted event data into it.
 
 ### The test workflow
 

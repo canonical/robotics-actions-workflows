@@ -8,6 +8,11 @@ on:
         description: The branch to checkout.
         required: false
         type: string
+      preliminary-script:
+        default: ''
+        description: A Bash script to run from the repository root after checkout and before each snap build.
+        required: false
+        type: string
       runs-on:
         default: 'ubuntu-latest'
         description: The runner(s) to use.
@@ -78,6 +83,15 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: '${{ inputs.git-ref }}'
+
+      - name: Run preliminary script
+        if: inputs.preliminary-script != ''
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        env:
+          PRELIMINARY_SCRIPT: ${{ inputs.preliminary-script }}
+          SNAPCRAFT_SOURCE_SUBDIR: ${{ matrix.source-subdir }}
+        run: bash -e -o pipefail -c "${PRELIMINARY_SCRIPT}"
 
       - name: Build snap
         uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1.3.0
