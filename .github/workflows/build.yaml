@@ -80,7 +80,7 @@ jobs:
           ref: '${{ inputs.git-ref }}'
 
       - name: Build snap
-        uses: canonical/action-build@fix/gbeuzeboc/pass-specific-craft-env-var # v1.3.0
+        uses: Guillaumebeuzeboc/action-build@fix/gbeuzeboc/pass-specific-craft-env-var # v1.3.0
         id: build-snap
         env:
           SNAPCRAFT_BUILD_INFO: 1
