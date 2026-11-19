@@ -13,11 +13,6 @@ on:
         description: The runner(s) to use.
         required: false
         type: string
-      snapcraft-args:
-        default: ''
-        description: The arguments to pass to snapcraft (pack).
-        required: false
-        type: string
       snapcraft-channel:
         default: 'latest/stable'
         description: The channel from which to install Snapcraft.
@@ -80,15 +75,13 @@ jobs:
           ref: '${{ inputs.git-ref }}'
 
       - name: Build snap
-        uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1.3.0
+        uses: canonical/craft-actions/snapcraft/pack@a59addd75d04a3002887e699abee4f60bf1c7621 # v1.1.0
         id: build-snap
         env:
-          SNAPCRAFT_BUILD_INFO: 1
           SNAPCRAFT_ENABLE_EXPERIMENTAL_EXTENSIONS: '${{ inputs.snapcraft-enable-experimental-extensions }}'
         with:
           path: '${{ matrix.source-subdir }}'
-          snapcraft-channel: '${{ inputs.snapcraft-channel }}'
-          snapcraft-args: '${{ inputs.snapcraft-args }}'
+          channel: '${{ inputs.snapcraft-channel }}'
 
       - name: Find out the branch name
         id: get-branch
@@ -100,7 +93,7 @@ jobs:
       - name: Set unique artifact name
         id: artifact-unique-name
         env:
-          SNAP_PATH: '${{ steps.build-snap.outputs.snap }}'
+          SNAP_PATH: '${{ steps.build-snap.outputs.snaps }}'
           BRANCH_NAME: '${{ steps.get-branch.outputs.branch_name }}'
         run: |
           echo "artifact-name=workflow-build-snap-$(basename -s .snap "${SNAP_PATH}")-${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
@@ -109,13 +102,13 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
-          path: '${{ steps.build-snap.outputs.snap }}'
+          path: '${{ steps.build-snap.outputs.snaps }}'
           retention-days: 10
           if-no-files-found: error
 
       - name: Build summary
         env:
-          SNAP_PATH: '${{ steps.build-snap.outputs.snap }}'
+          SNAP_PATH: '${{ steps.build-snap.outputs.snaps }}'
           ARTIFACT_NAME: '${{ steps.artifact-unique-name.outputs.artifact-name }}'
           RUNS_ON: '${{ toJson(matrix.runs-on) }}'
           SOURCE_SUBDIR: '${{ matrix.source-subdir }}'
