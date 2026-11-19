@@ -364,7 +364,7 @@ name: webhook
 on:
   issues:
     types: [opened]
-  pull_request:
+  pull_request_target:
     types: [opened]
   workflow_run:
     workflows: [build, lint, test, snap]  # names of your CI workflows
@@ -410,6 +410,7 @@ The permissions required by each workflow are:
 
 | Workflow | `contents` | `issues` | `pull-requests` | `actions` |
 | --- | --- | --- | --- | --- |
+| [webhook.yaml](.github/workflows/webhook.yaml) | — | — | — | read |
 | [snap.yaml](.github/workflows/snap.yaml) | read | — | — | write¹ |
 | [build.yaml](.github/workflows/build.yaml) | read | — | — | — |
 | [test.yaml](.github/workflows/test.yaml) | read | — | — | — |
