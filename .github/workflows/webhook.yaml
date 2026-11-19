@@ -22,7 +22,7 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           failed=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --paginate \
-            --jq '.jobs[] | select(.conclusion == "failure") | .name as $job | .steps[] | select(.conclusion == "failure") | "\($job) / \(.name)"' \
+            --jq '.jobs[] | select(.conclusion == "failure") | .name + " / " + (.steps[] | select(.conclusion == "failure") | .name)' \
             | head -n1 || true)
           echo "failed=${failed}" >> "$GITHUB_OUTPUT"
 
