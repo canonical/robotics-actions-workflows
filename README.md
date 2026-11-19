@@ -135,7 +135,7 @@ For further configurations, see each sub-workflow details below.
 #### Options
 
 | Option | Default Value | Description | Required |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `cleanup` | false | Whether to cleanup the artifacts. | false |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 | `lxd-image` | ' ' | The LXD image to run this action in. | false |
@@ -152,7 +152,7 @@ For further configurations, see each sub-workflow details below.
 #### Secrets
 
 | Secret | Description | Required |
-|---|---|---|
+| --- | --- | --- |
 | `snapstore-login` | Store credential (see 'snapcraft export-login'). | false |
 
 ### The build workflow
@@ -234,7 +234,7 @@ The `publish` uses the following subset of options from the `snap` workflow:
 - `snap-risk`
 - `snap-track`
 
-A complete working example can be found [here](https://github.com/canonical/turtlebot3c-snap/blob/main/.github/workflows/snap.yaml).
+A complete working example can be found at [canonical/turtlebot3c-snap](https://github.com/canonical/turtlebot3c-snap/blob/main/.github/workflows/snap.yaml).
 
 ### The promote workflow
 
@@ -243,7 +243,7 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 #### Options
 
 | Option | Default Value | Description | Required |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `snap` | '' | The snap to promote. If not provided, the name is inferred from the local snapcraft.yaml. | false |
 | `from-channel` | latest/candidate | The channel from which to promote. | false |
 | `to-channel` | latest/stable | The channel to which to promote. | false |
@@ -253,7 +253,7 @@ The [promote](.github/workflows/promote.yaml) workflow promotes a given snap fro
 #### Secrets
 
 | Secret | Description | Required |
-|---|---|---|
+| --- | --- | --- |
 | `snapstore-login` | Store credential (see 'snapcraft export-login'). | true |
 
 ### The generic-upstream-monitor workflow
@@ -274,7 +274,7 @@ The workflow is said 'generic' in that it expects two user provided bash scripts
 #### Options
 
 | Option | Default Value | Description | Required |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 | `issue-assignee` | '' | Whom to assign the issue to. | false |
 | `script-compare-versions` | '' | A bash script to compare versions. | false |
@@ -289,7 +289,7 @@ It provides a `script-get-upstream-version` script that retrieve the latest tag 
 #### Options
 
 | Option | Default Value | Description | Required |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 | `issue-assignee` | '' | Whom to assign the issue to. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
@@ -303,10 +303,12 @@ When a new version is detected upstream and an issue is opened,
 this workflow can be triggered to automatically create a PR that updates the `snapcraft.yaml` file with the new version.
 
 The workflow can operate in two modes:
+
 - **Automatic mode** (recommended): When called without `new-version` and `issue-to-close` inputs, the workflow automatically finds the latest open monitoring issue (e.g., "[CI] Found version 'v0.27.0' upstream"), extracts the version from it, and proceeds with the bump.
 - **Manual mode**: When `new-version` and `issue-to-close` are both provided, the workflow uses those values directly.
 
 The workflow:
+
 1. Finds the latest monitoring issue and extracts the version (if inputs not provided). If no monitoring issue is found, the workflow exits successfully without making changes.
 2. Checks out the repository's default branch.
 3. Creates a new branch based on the `new-version` (e.g., `feat/bump-v0.27.0`).
@@ -322,7 +324,7 @@ The workflow:
 #### Options
 
 | Option | Default Value | Description | Required |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `new-version` | '' | The new version tag (e.g., 'v0.27.0'). If not provided, will automatically find the latest monitoring issue. | false |
 | `issue-to-close` | '' | The issue number that this PR will resolve (e.g., '108'). If not provided, will automatically find the latest monitoring issue. | false |
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
@@ -339,7 +341,7 @@ it opens an issue.
 #### Options
 
 | Option | Default Value | Description | Required |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `git-ref` | ${{ github.ref }} | The branch to checkout. | false |
 | `issue-assignee` | '' | Whom to assign the issue to. | false |
 | `snap-name` | '' | The snap name. | false |
@@ -407,7 +409,7 @@ jobs:
 The permissions required by each workflow are:
 
 | Workflow | `contents` | `issues` | `pull-requests` | `actions` |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | [snap.yaml](.github/workflows/snap.yaml) | read | — | — | write¹ |
 | [build.yaml](.github/workflows/build.yaml) | read | — | — | — |
 | [test.yaml](.github/workflows/test.yaml) | read | — | — | — |
