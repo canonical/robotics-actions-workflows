@@ -349,6 +349,38 @@ it opens an issue.
 | `snapcraft-source-subdir` | ' . ' | The directory of the snapcraft project. | false |
 | `threshold` | '10' | The threshold to trigger the issue (in days). | false |
 
+### Webhook notifications
+
+`webhook.yaml` posts a message to a Mattermost incoming webhook when an issue
+or pull request is opened, or when one of your CI workflows fails.
+The triggers are defined by the calling workflow, so copy the following to
+`.github/workflows/webhook.yaml` in your repository:
+
+```yaml
+name: webhook
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+  workflow_run:
+    workflows: [build, lint, test, snap]  # names of your CI workflows
+    types: [completed]
+
+jobs:
+  notify:
+    # Only notify on failed CI runs, not on every workflow_run.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure'
+    permissions:
+      actions: read  # to name the failed job/step of a CI run
+    uses: canonical/robotics-actions-workflows/.github/workflows/webhook.yaml@main
+    secrets:
+      MM_WEBHOOK_URL: ${{ secrets.MM_WEBHOOK_URL }}
+```
+
+Store the webhook URL as the `MM_WEBHOOK_URL` repository secret.
+
 ### Permissions
 
 Each reusable workflow follows the principle of least privilege:
