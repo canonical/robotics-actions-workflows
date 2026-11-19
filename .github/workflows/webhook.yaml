@@ -1,0 +1,43 @@
+name: webhook
+
+on:
+  workflow_call:
+    secrets:
+      MM_WEBHOOK_URL:
+        description: Mattermost incoming webhook URL to post notifications to.
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-slim
+    permissions:
+      actions: read  # to look up the failed job/step of a CI run
+    steps:
+      - name: Look up failed job and step
+        id: lookup
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          failed=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --paginate \
+            --jq '.jobs[] | select(.conclusion == "failure") | .name + " / " + (.steps[] | select(.conclusion == "failure") | .name)' \
+            | head -n1 || true)
+          echo "failed=${failed}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Mattermost
+        env:
+          MM_WEBHOOK_URL: ${{ secrets.MM_WEBHOOK_URL }}
+          FAILED: ${{ steps.lookup.outputs.failed }}
+          # Free-text titles go through env, not ${{ }}, so they can't inject shell.
+          TITLE: ${{ github.event.pull_request.title || github.event.issue.title }}
+          LABEL: ${{ github.event_name == 'workflow_run' && format('{0} failed', github.event.workflow_run.name) || github.event_name }}
+          LINK: >-
+            ${{ (github.event.pull_request || github.event.issue)
+            && format('[{0}#{1}]({2})', github.repository, github.event.pull_request.number || github.event.issue.number, github.event.pull_request.html_url || github.event.issue.html_url)
+            || format('[{0}/actions/runs/{1}]({2})', github.repository, github.event.workflow_run.id, github.event.workflow_run.html_url) }}
+        run: |
+          curl -sS --fail-with-body -X POST -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg t "**${LABEL}** ${LINK} by ${{ github.actor }}${TITLE:+: $TITLE}${FAILED:+: $FAILED}" '{text:$t}')" \
+            "${MM_WEBHOOK_URL}"
