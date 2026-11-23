@@ -367,7 +367,7 @@ on:
   pull_request_target:
     types: [opened]
   workflow_run:
-    workflows: [build, lint, test, snap]  # names of your CI workflows
+    workflows: [build, lint, test, snap]  # names of your CI workflows, omit to match all workflows
     types: [completed]
 
 jobs:
