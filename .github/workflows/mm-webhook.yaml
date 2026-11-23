@@ -1,4 +1,4 @@
-name: webhook
+name: mm-webhook
 
 on:
   workflow_call:
