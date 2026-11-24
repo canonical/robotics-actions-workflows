@@ -44,11 +44,6 @@ on:
         description: Snap Store channel track use for publication.
         required: false
         type: string
-      snapcraft-args:
-        default: ''
-        description: The arguments to pass to snapcraft (pack).
-        required: false
-        type: string
       snapcraft-channel:
         default: 'latest/stable'
         description: The channel from which to install Snapcraft.
@@ -82,7 +77,6 @@ jobs:
     with:
       git-ref: ${{ inputs.git-ref }}
       runs-on: ${{ inputs.runs-on }}
-      snapcraft-args: ${{ inputs.snapcraft-args }}
       snapcraft-channel: ${{ inputs.snapcraft-channel }}
       snapcraft-enable-experimental-extensions: ${{ inputs.snapcraft-enable-experimental-extensions }}
       snapcraft-source-subdir: ${{ inputs.snapcraft-source-subdir }}
